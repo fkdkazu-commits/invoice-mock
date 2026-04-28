@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ダッシュボード — InvoiceAI</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .chart-bar-wrap { display: flex; align-items: flex-end; gap: 8px; height: 120px; padding-top: 8px; }
+    .chart-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .chart-bar {
+      width: 100%; border-radius: 4px 4px 0 0;
+      background: var(--sky); transition: opacity .15s;
+    }
+    .chart-bar:hover { opacity: .75; }
+    .chart-bar.light { background: var(--sky-light); }
+    .chart-label { font-size: 10px; color: var(--gray-400); }
+    .chart-val { font-size: 10px; font-weight: 700; color: var(--gray-600); }
+    .recent-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--gray-100); }
+    .recent-row:last-child { border-bottom: none; }
+    .recent-icon { width: 36px; height: 36px; border-radius: var(--radius); background: var(--sky-light); display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+    .recent-info { flex: 1; min-width: 0; }
+    .recent-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .recent-meta { font-size: 11px; color: var(--gray-400); margin-top: 2px; }
+    .recent-amount { font-size: 14px; font-weight: 700; text-align: right; flex-shrink: 0; }
+    .activity-item { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--gray-100); }
+    .activity-item:last-child { border-bottom: none; }
+    .activity-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
+    .activity-text { flex: 1; font-size: 12px; line-height: 1.5; }
+    .activity-time { font-size: 11px; color: var(--gray-400); flex-shrink: 0; }
+    .todo-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--gray-100); cursor: pointer; }
+    .todo-item:last-child { border-bottom: none; }
+    .todo-item:hover { opacity: .8; }
+    .todo-num { font-size: 20px; font-weight: 800; color: var(--red); min-width: 32px; }
+    .todo-label { flex: 1; font-size: 13px; }
+    .grid-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+    .grid-3col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+    @media (max-width: 900px) { .grid-2col, .grid-3col { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+<div class="app-layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">📄</div>
+      <div class="sidebar-logo-text">InvoiceAI<span>請求書自動処理</span></div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">メニュー</div>
+      <a class="nav-item active" href="dashboard.html"><span class="nav-icon">🏠</span>ダッシュボード</a>
+      <a class="nav-item" href="upload.html"><span class="nav-icon">📤</span>請求書アップロード</a>
+      <a class="nav-item" href="ocr-confirm.html"><span class="nav-icon">🔍</span>OCR結果確認<span class="nav-badge">3</span></a>
+      <a class="nav-item" href="approval.html"><span class="nav-icon">✅</span>承認フロー<span class="nav-badge">5</span></a>
+      <a class="nav-item" href="list.html"><span class="nav-icon">📋</span>ステータス一覧</a>
+      <div class="nav-section-label">管理</div>
+      <a class="nav-item" href="settings.html"><span class="nav-icon">⚙️</span>管理者設定</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-avatar">山</div>
+      <div class="user-info">
+        <div class="user-name">山田 太郎</div>
+        <div class="user-role">経理部マネージャー</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main-content">
+    <header class="top-header">
+      <span class="page-title">ダッシュボード</span>
+      <div class="header-actions">
+        <button class="header-icon-btn" title="通知">🔔<span class="notif-dot"></span></button>
+        <button class="header-icon-btn" title="ヘルプ">❓</button>
+        <a href="upload.html"><button class="btn btn-primary"><span>＋</span> 請求書を追加</button></a>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <!-- アラート -->
+      <div class="alert alert-warning">
+        <span>⚠️</span>
+        <span>5件の請求書が承認待ちです。期日超過になる前に確認してください。&nbsp;<a href="approval.html" style="color:inherit;text-decoration:underline">確認する →</a></span>
+      </div>
+
+      <!-- KPI -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">今月の処理件数</div>
+          <div class="stat-value">142</div>
+          <div class="stat-badge badge-up">▲ 12% 先月比</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">OCR自動化率</div>
+          <div class="stat-value">94<span style="font-size:18px;font-weight:400">%</span></div>
+          <div class="stat-badge badge-up">▲ 3pt 先月比</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">承認待ち</div>
+          <div class="stat-value" style="color:var(--red)">5</div>
+          <div class="stat-sub">うち2件は期日24h以内</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">今月の請求総額</div>
+          <div class="stat-value" style="font-size:22px">¥8.4M</div>
+          <div class="stat-badge badge-new">142件分</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">平均処理時間</div>
+          <div class="stat-value">2.3<span style="font-size:16px;font-weight:400">分</span></div>
+          <div class="stat-badge badge-up">▲ 従来比 87%削減</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">エラー率</div>
+          <div class="stat-value">1.4<span style="font-size:18px;font-weight:400">%</span></div>
+          <div class="stat-badge badge-down">▼ 0.3pt 先月比</div>
+        </div>
+      </div>
+
+      <!-- 棒グラフ + ToDoリスト -->
+      <div class="grid-2col">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">📊 月別処理件数（直近6ヶ月）</span>
+          </div>
+          <div class="card-body">
+            <div class="chart-bar-wrap">
+              <div class="chart-bar-col">
+                <span class="chart-val">89</span>
+                <div class="chart-bar light" style="height:60px"></div>
+                <span class="chart-label">11月</span>
+              </div>
+              <div class="chart-bar-col">
+                <span class="chart-val">102</span>
+                <div class="chart-bar light" style="height:72px"></div>
+                <span class="chart-label">12月</span>
+              </div>
+              <div class="chart-bar-col">
+                <span class="chart-val">98</span>
+                <div class="chart-bar light" style="height:68px"></div>
+                <span class="chart-label">1月</span>
+              </div>
+              <div class="chart-bar-col">
+                <span class="chart-val">115</span>
+                <div class="chart-bar light" style="height:82px"></div>
+                <span class="chart-label">2月</span>
+              </div>
+              <div class="chart-bar-col">
+                <span class="chart-val">127</span>
+                <div class="chart-bar" style="height:96px"></div>
+                <span class="chart-label">3月</span>
+              </div>
+              <div class="chart-bar-col">
+                <span class="chart-val" style="color:var(--sky)">142</span>
+                <div class="chart-bar" style="height:112px;background:var(--navy)"></div>
+                <span class="chart-label" style="font-weight:700">4月</span>
+              </div>
+            </div>
+            <p style="font-size:11px;color:var(--gray-400);margin-top:12px;text-align:right">▪ 今月は過去最多処理数を更新中</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">📌 対応が必要なタスク</span>
+            <span class="chip chip-red">8件</span>
+          </div>
+          <div class="card-body" style="padding:12px 20px">
+            <a href="ocr-confirm.html">
+              <div class="todo-item">
+                <span class="todo-num">3</span>
+                <div class="todo-label">
+                  <div style="font-weight:600">OCR確認待ち</div>
+                  <div style="font-size:11px;color:var(--gray-400)">手書き請求書あり・要目視確認</div>
+                </div>
+                <span style="font-size:18px;color:var(--gray-400)">→</span>
+              </div>
+            </a>
+            <a href="approval.html">
+              <div class="todo-item">
+                <span class="todo-num" style="color:var(--yellow)">5</span>
+                <div class="todo-label">
+                  <div style="font-weight:600">承認待ち</div>
+                  <div style="font-size:11px;color:var(--gray-400)">うち2件は明日期限</div>
+                </div>
+                <span style="font-size:18px;color:var(--gray-400)">→</span>
+              </div>
+            </a>
+            <div class="todo-item" style="opacity:.5">
+              <span class="todo-num" style="color:var(--gray-400)">0</span>
+              <div class="todo-label">
+                <div style="font-weight:600">エラー再処理</div>
+                <div style="font-size:11px;color:var(--gray-400)">現在なし</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 最近の請求書 + アクティビティ -->
+      <div class="grid-2col">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">🧾 最近処理した請求書</span>
+            <a href="list.html"><button class="btn btn-outline btn-sm">一覧を見る</button></a>
+          </div>
+          <div class="card-body">
+            <div class="recent-row">
+              <div class="recent-icon">🏭</div>
+              <div class="recent-info">
+                <div class="recent-name">株式会社サンプル商事</div>
+                <div class="recent-meta">INV-2025-0142 ・ 2025/04/27</div>
+              </div>
+              <div>
+                <div class="recent-amount">¥330,000</div>
+                <span class="status status-approved" style="float:right;margin-top:4px">承認済</span>
+              </div>
+            </div>
+            <div class="recent-row">
+              <div class="recent-icon">💼</div>
+              <div class="recent-info">
+                <div class="recent-name">テスト印刷株式会社</div>
+                <div class="recent-meta">INV-2025-0141 ・ 2025/04/26</div>
+              </div>
+              <div>
+                <div class="recent-amount">¥88,000</div>
+                <span class="status status-pending" style="float:right;margin-top:4px">承認待</span>
+              </div>
+            </div>
+            <div class="recent-row">
+              <div class="recent-icon">📦</div>
+              <div class="recent-info">
+                <div class="recent-name">山本物流サービス</div>
+                <div class="recent-meta">INV-2025-0140 ・ 2025/04/25</div>
+              </div>
+              <div>
+                <div class="recent-amount">¥154,000</div>
+                <span class="status status-approved" style="float:right;margin-top:4px">承認済</span>
+              </div>
+            </div>
+            <div class="recent-row">
+              <div class="recent-icon">💡</div>
+              <div class="recent-info">
+                <div class="recent-name">東日本電力サービス</div>
+                <div class="recent-meta">INV-2025-0139 ・ 2025/04/24</div>
+              </div>
+              <div>
+                <div class="recent-amount">¥42,350</div>
+                <span class="status status-processing" style="float:right;margin-top:4px">処理中</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">📝 アクティビティログ</span>
+          </div>
+          <div class="card-body" style="padding:12px 20px">
+            <div class="activity-item">
+              <div class="activity-dot" style="background:var(--green)"></div>
+              <div class="activity-text"><strong>INV-2025-0142</strong> が承認されました（鈴木部長）</div>
+              <div class="activity-time">3分前</div>
+            </div>
+            <div class="activity-item">
+              <div class="activity-dot" style="background:var(--sky)"></div>
+              <div class="activity-text"><strong>INV-2025-0143</strong> のOCR処理が完了しました — 適格請求書✓</div>
+              <div class="activity-time">15分前</div>
+            </div>
+            <div class="activity-item">
+              <div class="activity-dot" style="background:var(--yellow)"></div>
+              <div class="activity-text"><strong>INV-2025-0141</strong> のOCR結果に低信頼度フィールドあり — 要確認</div>
+              <div class="activity-time">1時間前</div>
+            </div>
+            <div class="activity-item">
+              <div class="activity-dot" style="background:var(--sky)"></div>
+              <div class="activity-text">新しい請求書 <strong>3件</strong> がアップロードされました（田中さん）</div>
+              <div class="activity-time">2時間前</div>
+            </div>
+            <div class="activity-item">
+              <div class="activity-dot" style="background:var(--red)"></div>
+              <div class="activity-text"><strong>INV-2025-0138</strong> が差し戻されました — コメントあり</div>
+              <div class="activity-time">昨日</div>
+            </div>
+            <div class="activity-item">
+              <div class="activity-dot" style="background:var(--green)"></div>
+              <div class="activity-text">今月の処理件数が過去最多 <strong>142件</strong> を達成</div>
+              <div class="activity-time">昨日</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+</body>
+</html>

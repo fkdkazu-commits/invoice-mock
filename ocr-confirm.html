@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OCR結果確認 — InvoiceAI</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .ocr-layout { display: grid; grid-template-columns: 1fr 420px; gap: 20px; align-items: start; }
+    .pdf-preview {
+      background: var(--gray-800); border-radius: var(--radius);
+      min-height: 520px; display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 12px; color: #fff;
+    }
+    .pdf-preview-img {
+      width: 100%; max-width: 340px;
+      background: var(--white); border-radius: 4px; padding: 20px;
+      font-size: 11px; color: var(--gray-800); line-height: 1.8;
+    }
+    .pdf-invoice-header { display: flex; justify-content: space-between; margin-bottom: 16px; }
+    .pdf-invoice-title { font-size: 18px; font-weight: 800; }
+    .pdf-line { border: none; border-top: 1px solid var(--gray-200); margin: 8px 0; }
+    .pdf-row { display: flex; justify-content: space-between; padding: 2px 0; }
+    .pdf-row.total { font-weight: 700; font-size: 13px; border-top: 2px solid var(--gray-800); padding-top: 6px; margin-top: 4px; }
+    .field-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 0; border-bottom: 1px solid var(--gray-100);
+    }
+    .field-row:last-child { border-bottom: none; }
+    .field-label { font-size: 11px; font-weight: 700; color: var(--gray-400); width: 120px; flex-shrink: 0; }
+    .field-value { flex: 1; }
+    .field-conf { font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 999px; flex-shrink: 0; }
+    .conf-high   { background: var(--green-bg); color: #15803d; }
+    .conf-mid    { background: var(--yellow-bg); color: #92400e; }
+    .conf-low    { background: var(--red-bg); color: #b91c1c; }
+    .conf-ai     { background: var(--sky-light); color: var(--sky-dark); }
+    .field-edit { background: none; border: none; font-size: 13px; color: var(--sky); cursor: pointer; }
+    .highlight-low { outline: 2px solid var(--red); border-radius: 3px; }
+    .invoice-queue { display: flex; flex-direction: column; gap: 8px; }
+    .queue-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px; border-radius: var(--radius);
+      border: 1px solid var(--gray-200); cursor: pointer; transition: all .15s;
+      background: var(--white);
+    }
+    .queue-item:hover { border-color: var(--sky); }
+    .queue-item.active { border-color: var(--sky); background: var(--sky-light); }
+    .queue-num { font-size: 11px; font-weight: 700; color: var(--gray-400); width: 20px; }
+    .queue-name { flex: 1; font-size: 12px; font-weight: 600; }
+    .pagination { display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 13px; color: var(--gray-400); }
+    .badge-qualified { background: #dcfce7; color: #15803d; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px; }
+    .badge-unqualified { background: var(--gray-100); color: var(--gray-600); font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+<div class="app-layout">
+
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">📄</div>
+      <div class="sidebar-logo-text">InvoiceAI<span>請求書自動処理</span></div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">メニュー</div>
+      <a class="nav-item" href="dashboard.html"><span class="nav-icon">🏠</span>ダッシュボード</a>
+      <a class="nav-item" href="upload.html"><span class="nav-icon">📤</span>請求書アップロード</a>
+      <a class="nav-item active" href="ocr-confirm.html"><span class="nav-icon">🔍</span>OCR結果確認<span class="nav-badge">3</span></a>
+      <a class="nav-item" href="approval.html"><span class="nav-icon">✅</span>承認フロー<span class="nav-badge">5</span></a>
+      <a class="nav-item" href="list.html"><span class="nav-icon">📋</span>ステータス一覧</a>
+      <div class="nav-section-label">管理</div>
+      <a class="nav-item" href="settings.html"><span class="nav-icon">⚙️</span>管理者設定</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-avatar">山</div>
+      <div class="user-info">
+        <div class="user-name">山田 太郎</div>
+        <div class="user-role">経理部マネージャー</div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <header class="top-header">
+      <span class="page-title">OCR結果確認</span>
+      <div class="header-actions">
+        <button class="header-icon-btn">🔔<span class="notif-dot"></span></button>
+        <button class="btn btn-outline btn-sm">← 前へ</button>
+        <button class="btn btn-primary btn-sm">次へ →</button>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <div class="alert alert-warning" style="margin-bottom:16px">
+        <span>⚠️</span>
+        <span>確認が必要な請求書が <strong>3件</strong> あります。赤字フィールドは低信頼度です。修正後に承認フローへ送信してください。</span>
+      </div>
+
+      <!-- 確認キュー -->
+      <div style="margin-bottom:16px">
+        <p class="section-label" style="margin-bottom:8px">確認待ちリスト</p>
+        <div class="invoice-queue" style="flex-direction:row;flex-wrap:wrap;gap:8px">
+          <div class="queue-item active" style="max-width:220px">
+            <span class="queue-num">1</span>
+            <div class="queue-name">invoice_handwritten_0427.pdf</div>
+            <span class="status status-pending">要確認</span>
+          </div>
+          <div class="queue-item" style="max-width:220px">
+            <span class="queue-num">2</span>
+            <div class="queue-name">receipt_001.jpg</div>
+            <span class="status status-pending">要確認</span>
+          </div>
+          <div class="queue-item" style="max-width:220px">
+            <span class="queue-num">3</span>
+            <div class="queue-name">invoice_sample_0426.pdf</div>
+            <span class="status status-processing">処理中</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- メインレイアウト -->
+      <div class="ocr-layout">
+        <!-- 左: PDF プレビュー -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">📄 invoice_handwritten_0427.pdf</span>
+            <span class="chip chip-yellow">手書き書類</span>
+            <button class="btn btn-outline btn-sm">拡大</button>
+          </div>
+          <div class="card-body">
+            <div class="pdf-preview">
+              <div class="pdf-preview-img">
+                <div class="pdf-invoice-header">
+                  <div>
+                    <div class="pdf-invoice-title">請求書</div>
+                    <div style="font-size:10px;color:#666">No. 2025-0427-01</div>
+                  </div>
+                  <div style="text-align:right;font-size:10px">
+                    <div>株式会社テスト商事</div>
+                    <div>2025年4月27日</div>
+                  </div>
+                </div>
+                <hr class="pdf-line">
+                <div style="font-size:10px;margin-bottom:8px">
+                  <div>請求先：サンプル株式会社 御中</div>
+                  <div style="margin-top:4px">登録番号：<strong>T1234567890123</strong></div>
+                </div>
+                <hr class="pdf-line">
+                <div class="pdf-row"><span>商品A（10個）</span><span>¥50,000</span></div>
+                <div class="pdf-row"><span>作業費</span><span>¥80,000</span></div>
+                <div class="pdf-row"><span>消費税（10%）</span><span>¥13,000</span></div>
+                <div class="pdf-row total"><span>合計</span><span style="background:rgba(239,68,68,.15);padding:1px 4px;border-radius:2px">¥143,???</span></div>
+                <div style="margin-top:10px;font-size:9px;color:#999">※ 合計金額の読み取りが不明瞭</div>
+              </div>
+              <p style="font-size:11px;color:#94a3b8">実際の画面では原本PDFが表示されます</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 右: 抽出結果 -->
+        <div>
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-header">
+              <span class="card-title">🤖 OCR抽出結果</span>
+              <span class="chip chip-yellow">3フィールド要確認</span>
+            </div>
+            <div class="card-body" style="padding:12px 20px">
+
+              <div class="field-row">
+                <div class="field-label">取引先名</div>
+                <div class="field-value">
+                  <input type="text" class="form-control" value="株式会社テスト商事" style="font-size:12px">
+                </div>
+                <span class="field-conf conf-high">97%</span>
+              </div>
+
+              <div class="field-row">
+                <div class="field-label">請求書番号</div>
+                <div class="field-value">
+                  <input type="text" class="form-control" value="2025-0427-01" style="font-size:12px">
+                </div>
+                <span class="field-conf conf-high">95%</span>
+              </div>
+
+              <div class="field-row">
+                <div class="field-label">発行日</div>
+                <div class="field-value">
+                  <input type="text" class="form-control" value="2025年4月27日" style="font-size:12px">
+                </div>
+                <span class="field-conf conf-high">92%</span>
+              </div>
+
+              <div class="field-row">
+                <div class="field-label">請求金額（税抜）</div>
+                <div class="field-value">
+                  <input type="text" class="form-control highlight-low" placeholder="読み取り失敗" style="font-size:12px">
+                </div>
+                <span class="field-conf conf-low">23%</span>
+              </div>
+
+              <div class="field-row">
+                <div class="field-label">消費税</div>
+                <div class="field-value">
+                  <input type="text" class="form-control highlight-low" value="¥13,000" style="font-size:12px">
+                </div>
+                <span class="field-conf conf-mid">61%</span>
+              </div>
+
+              <div class="field-row">
+                <div class="field-label">請求金額（税込）</div>
+                <div class="field-value">
+                  <input type="text" class="form-control highlight-low" placeholder="要入力" style="font-size:12px">
+                </div>
+                <span class="field-conf conf-low">18%</span>
+              </div>
+
+              <div class="field-row">
+                <div class="field-label">適格請求書</div>
+                <div class="field-value">
+                  <span class="badge-qualified">✅ 適格（T1234567890123）</span>
+                </div>
+                <span class="field-conf conf-high">99%</span>
+              </div>
+
+              <div class="field-row">
+                <div class="field-label">支払期限</div>
+                <div class="field-value">
+                  <input type="text" class="form-control" value="2025年5月31日" style="font-size:12px">
+                </div>
+                <span class="field-conf conf-mid">78%</span>
+              </div>
+
+              <div class="field-row">
+                <div class="field-label">勘定科目（自動）</div>
+                <div class="field-value">
+                  <select class="form-control" style="font-size:12px">
+                    <option>仕入高</option>
+                    <option>外注費</option>
+                    <option>消耗品費</option>
+                  </select>
+                </div>
+                <span class="field-conf conf-ai">AI</span>
+              </div>
+
+            </div>
+          </div>
+
+          <div class="alert alert-info" style="margin-bottom:12px">
+            <span>🤖</span>
+            <span style="font-size:12px">低信頼度フィールドはClaude AIが補完を試みました。赤枠は目視確認が必要です。</span>
+          </div>
+
+          <div style="display:flex;gap:10px">
+            <button class="btn btn-outline" style="flex:1">差し戻し</button>
+            <a href="approval.html" style="flex:1">
+              <button class="btn btn-success" style="width:100%">✅ 確認完了 → 承認へ</button>
+            </a>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+</body>
+</html>

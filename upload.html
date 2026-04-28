@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>請求書アップロード — InvoiceAI</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .drop-zone {
+      border: 2px dashed var(--gray-200);
+      border-radius: 12px;
+      padding: 48px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all .2s;
+      background: var(--gray-50);
+    }
+    .drop-zone:hover, .drop-zone.drag-over {
+      border-color: var(--sky);
+      background: var(--sky-light);
+    }
+    .drop-icon { font-size: 48px; margin-bottom: 12px; }
+    .drop-title { font-size: 16px; font-weight: 700; color: var(--gray-800); margin-bottom: 6px; }
+    .drop-sub { font-size: 13px; color: var(--gray-400); }
+    .drop-btn {
+      display: inline-block; margin-top: 16px;
+      background: var(--sky); color: #fff; padding: 9px 24px;
+      border-radius: var(--radius); font-size: 13px; font-weight: 700;
+    }
+    .file-list { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; }
+    .file-item {
+      display: flex; align-items: center; gap: 12px;
+      background: var(--white); border: 1px solid var(--gray-200);
+      border-radius: var(--radius); padding: 12px 16px;
+    }
+    .file-item-icon { font-size: 24px; flex-shrink: 0; }
+    .file-item-info { flex: 1; min-width: 0; }
+    .file-item-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .file-item-meta { font-size: 11px; color: var(--gray-400); margin-top: 2px; }
+    .file-item-progress { margin-top: 6px; }
+    .file-item-status { flex-shrink: 0; }
+    .file-remove { background: none; border: none; font-size: 16px; color: var(--gray-400); cursor: pointer; flex-shrink: 0; }
+    .upload-options { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+    .option-card {
+      border: 2px solid var(--gray-200); border-radius: var(--radius); padding: 16px;
+      cursor: pointer; transition: all .15s; text-align: center;
+    }
+    .option-card:hover { border-color: var(--sky); }
+    .option-card.selected { border-color: var(--sky); background: var(--sky-light); }
+    .option-icon { font-size: 28px; margin-bottom: 6px; }
+    .option-title { font-size: 13px; font-weight: 700; }
+    .option-sub { font-size: 11px; color: var(--gray-400); margin-top: 2px; }
+    .section-label {
+      font-size: 12px; font-weight: 700; color: var(--gray-600);
+      text-transform: uppercase; letter-spacing: .04em;
+      margin-bottom: 12px;
+    }
+    .process-steps { display: flex; align-items: center; gap: 8px; margin-bottom: 28px; }
+    .step {
+      flex: 1; text-align: center; padding: 12px 8px;
+      border-radius: var(--radius); background: var(--gray-100);
+      font-size: 12px; font-weight: 600; color: var(--gray-400); position: relative;
+    }
+    .step.active { background: var(--sky-light); color: var(--sky-dark); }
+    .step.done { background: var(--green-bg); color: #15803d; }
+    .step-num {
+      width: 22px; height: 22px; border-radius: 50%;
+      background: var(--gray-200); color: var(--gray-600);
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; margin-bottom: 4px;
+    }
+    .step.active .step-num { background: var(--sky); color: #fff; }
+    .step.done .step-num { background: var(--green); color: #fff; }
+    .step-arrow { font-size: 16px; color: var(--gray-300); flex-shrink: 0; }
+  </style>
+</head>
+<body>
+<div class="app-layout">
+
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">📄</div>
+      <div class="sidebar-logo-text">InvoiceAI<span>請求書自動処理</span></div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">メニュー</div>
+      <a class="nav-item" href="dashboard.html"><span class="nav-icon">🏠</span>ダッシュボード</a>
+      <a class="nav-item active" href="upload.html"><span class="nav-icon">📤</span>請求書アップロード</a>
+      <a class="nav-item" href="ocr-confirm.html"><span class="nav-icon">🔍</span>OCR結果確認<span class="nav-badge">3</span></a>
+      <a class="nav-item" href="approval.html"><span class="nav-icon">✅</span>承認フロー<span class="nav-badge">5</span></a>
+      <a class="nav-item" href="list.html"><span class="nav-icon">📋</span>ステータス一覧</a>
+      <div class="nav-section-label">管理</div>
+      <a class="nav-item" href="settings.html"><span class="nav-icon">⚙️</span>管理者設定</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-avatar">山</div>
+      <div class="user-info">
+        <div class="user-name">山田 太郎</div>
+        <div class="user-role">経理部マネージャー</div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <header class="top-header">
+      <span class="page-title">請求書アップロード</span>
+      <div class="header-actions">
+        <button class="header-icon-btn">🔔<span class="notif-dot"></span></button>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <!-- 進捗ステップ -->
+      <div class="process-steps">
+        <div class="step active">
+          <div class="step-num">1</div>
+          <div>アップロード</div>
+        </div>
+        <div class="step-arrow">›</div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div>OCR処理</div>
+        </div>
+        <div class="step-arrow">›</div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div>内容確認</div>
+        </div>
+        <div class="step-arrow">›</div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div>承認</div>
+        </div>
+        <div class="step-arrow">›</div>
+        <div class="step">
+          <div class="step-num">5</div>
+          <div>完了</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 360px;gap:20px;align-items:start">
+        <!-- メインアップロード -->
+        <div>
+          <div class="card" style="margin-bottom:20px">
+            <div class="card-header">
+              <span class="card-title">📤 ファイルを選択</span>
+            </div>
+            <div class="card-body">
+              <div class="drop-zone" id="dropZone">
+                <div class="drop-icon">📁</div>
+                <div class="drop-title">ファイルをドラッグ＆ドロップ</div>
+                <div class="drop-sub">または</div>
+                <div class="drop-btn">ファイルを選択</div>
+                <div class="drop-sub" style="margin-top:12px">PDF・JPG・PNG・TIFF 対応 ／ 最大 50MB</div>
+              </div>
+
+              <!-- アップロード済みファイル -->
+              <div class="file-list">
+                <div class="file-item">
+                  <div class="file-item-icon">📄</div>
+                  <div class="file-item-info">
+                    <div class="file-item-name">invoice_sample_corp_202504.pdf</div>
+                    <div class="file-item-meta">2.4 MB</div>
+                    <div class="file-item-progress">
+                      <div class="progress-bar"><div class="progress-fill" style="width:100%"></div></div>
+                    </div>
+                  </div>
+                  <div class="file-item-status"><span class="status status-approved">完了</span></div>
+                  <button class="file-remove">✕</button>
+                </div>
+                <div class="file-item">
+                  <div class="file-item-icon">🖼️</div>
+                  <div class="file-item-info">
+                    <div class="file-item-name">receipt_001.jpg</div>
+                    <div class="file-item-meta">0.8 MB</div>
+                    <div class="file-item-progress">
+                      <div class="progress-bar"><div class="progress-fill" style="width:68%"></div></div>
+                    </div>
+                  </div>
+                  <div class="file-item-status"><span class="status status-processing">処理中</span></div>
+                  <button class="file-remove">✕</button>
+                </div>
+                <div class="file-item">
+                  <div class="file-item-icon">📄</div>
+                  <div class="file-item-info">
+                    <div class="file-item-name">invoice_handwritten_0427.pdf</div>
+                    <div class="file-item-meta">1.1 MB</div>
+                    <div class="file-item-progress">
+                      <div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div>
+                    </div>
+                  </div>
+                  <div class="file-item-status"><span class="status status-pending">待機中</span></div>
+                  <button class="file-remove">✕</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 一括設定 -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">⚙️ 処理オプション</span>
+            </div>
+            <div class="card-body">
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">取引先（未入力はOCRで自動取得）</label>
+                  <input type="text" class="form-control" placeholder="自動検出">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">勘定科目</label>
+                  <select class="form-control">
+                    <option>自動判定</option>
+                    <option>仕入高</option>
+                    <option>外注費</option>
+                    <option>広告宣伝費</option>
+                    <option>消耗品費</option>
+                    <option>その他</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">承認ルート</label>
+                  <select class="form-control">
+                    <option>標準（部長承認）</option>
+                    <option>省略（5万円未満）</option>
+                    <option>役員承認（100万円超）</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">支払期限</label>
+                  <input type="date" class="form-control" value="2025-05-31">
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">備考・メモ</label>
+                <input type="text" class="form-control" placeholder="任意">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- サイドパネル -->
+        <div>
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-header">
+              <span class="card-title">📊 アップロード概要</span>
+            </div>
+            <div class="card-body">
+              <table style="width:100%;font-size:13px">
+                <tr><td style="color:var(--gray-400);padding:4px 0">ファイル数</td><td style="text-align:right;font-weight:700">3件</td></tr>
+                <tr><td style="color:var(--gray-400);padding:4px 0">合計サイズ</td><td style="text-align:right;font-weight:700">4.3 MB</td></tr>
+                <tr><td style="color:var(--gray-400);padding:4px 0">OCR完了</td><td style="text-align:right;font-weight:700;color:var(--green)">1件</td></tr>
+                <tr><td style="color:var(--gray-400);padding:4px 0">処理中</td><td style="text-align:right;font-weight:700;color:var(--sky)">1件</td></tr>
+                <tr><td style="color:var(--gray-400);padding:4px 0">待機中</td><td style="text-align:right;font-weight:700;color:var(--gray-400)">1件</td></tr>
+              </table>
+              <hr style="border:none;border-top:1px solid var(--gray-200);margin:12px 0">
+              <div class="progress-bar" style="height:8px;margin-bottom:6px">
+                <div class="progress-fill" style="width:33%"></div>
+              </div>
+              <p style="font-size:11px;color:var(--gray-400)">1 / 3件完了</p>
+            </div>
+          </div>
+
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-header">
+              <span class="card-title">💡 対応フォーマット</span>
+            </div>
+            <div class="card-body" style="padding:12px 16px">
+              <div style="display:flex;flex-wrap:wrap;gap:6px">
+                <span class="chip chip-sky">PDF</span>
+                <span class="chip chip-sky">JPG/JPEG</span>
+                <span class="chip chip-sky">PNG</span>
+                <span class="chip chip-sky">TIFF</span>
+                <span class="chip">最大50MB/件</span>
+              </div>
+              <p style="font-size:11px;color:var(--gray-400);margin-top:10px">手書き・スキャン・電子発行いずれも対応</p>
+            </div>
+          </div>
+
+          <div class="alert alert-info">
+            <span>ℹ️</span>
+            <span style="font-size:12px">手書き請求書は自動でAI補完（Claude）が実行されます</span>
+          </div>
+
+          <a href="ocr-confirm.html">
+            <button class="btn btn-primary btn-lg" style="width:100%">OCR処理を開始 →</button>
+          </a>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+</body>
+</html>

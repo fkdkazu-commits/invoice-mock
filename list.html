@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ステータス一覧 — InvoiceAI</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .filter-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+    .filter-select { padding: 7px 10px; border: 1px solid var(--gray-200); border-radius: var(--radius); font-size: 12px; color: var(--gray-600); background: var(--white); font-family: inherit; outline: none; }
+    .filter-select:focus { border-color: var(--sky); }
+    .table-wrap { overflow-x: auto; }
+    .vendor-logo { width: 28px; height: 28px; border-radius: 6px; background: var(--sky-light); display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; }
+    .vendor-cell { display: flex; align-items: center; gap: 8px; }
+    .qualified-mark { font-size: 11px; font-weight: 700; color: var(--green); }
+    .amount-cell { font-weight: 700; text-align: right; }
+    .action-btn-group { display: flex; gap: 4px; justify-content: flex-end; flex-wrap: nowrap; }
+    .pagination-bar { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-top: 1px solid var(--gray-200); font-size: 13px; color: var(--gray-400); }
+    .pagination-btns { display: flex; gap: 4px; }
+    .page-btn {
+      width: 32px; height: 32px; border: 1px solid var(--gray-200); border-radius: var(--radius);
+      background: var(--white); font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    }
+    .page-btn.active { background: var(--sky); color: #fff; border-color: var(--sky); font-weight: 700; }
+    .page-btn:hover:not(.active) { background: var(--gray-100); }
+    .summary-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+    .summary-chip {
+      padding: 6px 14px; border-radius: 999px; font-size: 12px; font-weight: 700; cursor: pointer;
+      border: 2px solid transparent; transition: all .15s;
+    }
+    .summary-chip.all   { background: var(--navy); color: #fff; }
+    .summary-chip.pending  { background: var(--yellow-bg); color: #92400e; border-color: var(--yellow); }
+    .summary-chip.approved { background: var(--green-bg); color: #15803d; border-color: var(--green); }
+    .summary-chip.rejected { background: var(--red-bg); color: #b91c1c; border-color: var(--red); }
+    .summary-chip.processing { background: var(--sky-light); color: var(--sky-dark); border-color: var(--sky); }
+    .export-bar { display: flex; gap: 8px; margin-left: auto; }
+  </style>
+</head>
+<body>
+<div class="app-layout">
+
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">📄</div>
+      <div class="sidebar-logo-text">InvoiceAI<span>請求書自動処理</span></div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">メニュー</div>
+      <a class="nav-item" href="dashboard.html"><span class="nav-icon">🏠</span>ダッシュボード</a>
+      <a class="nav-item" href="upload.html"><span class="nav-icon">📤</span>請求書アップロード</a>
+      <a class="nav-item" href="ocr-confirm.html"><span class="nav-icon">🔍</span>OCR結果確認<span class="nav-badge">3</span></a>
+      <a class="nav-item" href="approval.html"><span class="nav-icon">✅</span>承認フロー<span class="nav-badge">5</span></a>
+      <a class="nav-item active" href="list.html"><span class="nav-icon">📋</span>ステータス一覧</a>
+      <div class="nav-section-label">管理</div>
+      <a class="nav-item" href="settings.html"><span class="nav-icon">⚙️</span>管理者設定</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-avatar">山</div>
+      <div class="user-info">
+        <div class="user-name">山田 太郎</div>
+        <div class="user-role">経理部マネージャー</div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <header class="top-header">
+      <span class="page-title">ステータス一覧</span>
+      <div class="header-actions">
+        <button class="header-icon-btn">🔔<span class="notif-dot"></span></button>
+        <button class="btn btn-outline btn-sm">📥 CSV出力</button>
+        <a href="upload.html"><button class="btn btn-primary">＋ 新規登録</button></a>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <!-- ステータスフィルタ -->
+      <div class="summary-chips">
+        <div class="summary-chip all">すべて（142）</div>
+        <div class="summary-chip processing">処理中（3）</div>
+        <div class="summary-chip pending">承認待ち（5）</div>
+        <div class="summary-chip approved">承認済み（129）</div>
+        <div class="summary-chip rejected">差し戻し（5）</div>
+      </div>
+
+      <!-- フィルターバー -->
+      <div class="filter-bar">
+        <div class="search-bar" style="max-width:280px">
+          <span class="search-icon">🔍</span>
+          <input type="text" placeholder="請求書番号・取引先で検索">
+        </div>
+        <select class="filter-select">
+          <option>期間：今月</option>
+          <option>期間：先月</option>
+          <option>期間：過去3ヶ月</option>
+          <option>期間：年度</option>
+        </select>
+        <select class="filter-select">
+          <option>勘定科目：全て</option>
+          <option>仕入高</option>
+          <option>外注費</option>
+          <option>広告宣伝費</option>
+          <option>消耗品費</option>
+        </select>
+        <select class="filter-select">
+          <option>適格区分：全て</option>
+          <option>適格請求書のみ</option>
+          <option>非適格のみ</option>
+        </select>
+        <select class="filter-select">
+          <option>申請者：全て</option>
+          <option>田中さん</option>
+          <option>佐藤さん</option>
+          <option>山田さん</option>
+        </select>
+        <button class="btn btn-outline btn-sm">リセット</button>
+      </div>
+
+      <!-- テーブル -->
+      <div class="card">
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th style="width:32px"><input type="checkbox"></th>
+                <th>請求書番号</th>
+                <th>取引先</th>
+                <th>発行日</th>
+                <th>支払期限</th>
+                <th style="text-align:right">請求金額</th>
+                <th>勘定科目</th>
+                <th>適格</th>
+                <th>ステータス</th>
+                <th>申請者</th>
+                <th style="text-align:right">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="row-link">
+                <td><input type="checkbox"></td>
+                <td style="font-weight:600;color:var(--sky)">INV-2025-0142</td>
+                <td><div class="vendor-cell"><div class="vendor-logo">株</div>株式会社サンプル商事</div></td>
+                <td>2025/04/27</td>
+                <td>2025/05/31</td>
+                <td class="amount-cell">¥330,000</td>
+                <td>仕入高</td>
+                <td class="qualified-mark">✅ T9876...</td>
+                <td><span class="status status-approved">承認済</span></td>
+                <td>田中</td>
+                <td><div class="action-btn-group"><button class="btn btn-outline btn-sm">詳細</button></div></td>
+              </tr>
+              <tr class="row-link">
+                <td><input type="checkbox" checked></td>
+                <td style="font-weight:600;color:var(--sky)">INV-2025-0141</td>
+                <td><div class="vendor-cell"><div class="vendor-logo">テ</div>テスト印刷株式会社</div></td>
+                <td>2025/04/26</td>
+                <td style="color:var(--red);font-weight:700">2025/04/28</td>
+                <td class="amount-cell">¥88,000</td>
+                <td>消耗品費</td>
+                <td class="qualified-mark">✅ T1234...</td>
+                <td><span class="status status-pending">承認待</span></td>
+                <td>田中</td>
+                <td><div class="action-btn-group"><a href="approval.html"><button class="btn btn-primary btn-sm">承認</button></a><button class="btn btn-outline btn-sm">詳細</button></div></td>
+              </tr>
+              <tr class="row-link">
+                <td><input type="checkbox"></td>
+                <td style="font-weight:600;color:var(--sky)">INV-2025-0140</td>
+                <td><div class="vendor-cell"><div class="vendor-logo">山</div>山本物流サービス</div></td>
+                <td>2025/04/25</td>
+                <td>2025/05/25</td>
+                <td class="amount-cell">¥154,000</td>
+                <td>外注費</td>
+                <td class="qualified-mark">✅ T5678...</td>
+                <td><span class="status status-approved">承認済</span></td>
+                <td>佐藤</td>
+                <td><div class="action-btn-group"><button class="btn btn-outline btn-sm">詳細</button></div></td>
+              </tr>
+              <tr class="row-link">
+                <td><input type="checkbox"></td>
+                <td style="font-weight:600;color:var(--sky)">INV-2025-0139</td>
+                <td><div class="vendor-cell"><div class="vendor-logo">東</div>東日本電力サービス</div></td>
+                <td>2025/04/24</td>
+                <td style="color:var(--red);font-weight:700">2025/04/27</td>
+                <td class="amount-cell">¥42,350</td>
+                <td>光熱費</td>
+                <td class="qualified-mark">✅ T2468...</td>
+                <td><span class="status status-processing">処理中</span></td>
+                <td>田中</td>
+                <td><div class="action-btn-group"><a href="ocr-confirm.html"><button class="btn btn-warning btn-sm">確認</button></a><button class="btn btn-outline btn-sm">詳細</button></div></td>
+              </tr>
+              <tr class="row-link">
+                <td><input type="checkbox"></td>
+                <td style="font-weight:600;color:var(--sky)">INV-2025-0138</td>
+                <td><div class="vendor-cell"><div class="vendor-logo">IT</div>株式会社IT Solutions</div></td>
+                <td>2025/04/22</td>
+                <td>2025/05/22</td>
+                <td class="amount-cell">¥220,000</td>
+                <td>外注費</td>
+                <td class="qualified-mark">✅ T1357...</td>
+                <td><span class="status status-rejected">差戻し</span></td>
+                <td>佐藤</td>
+                <td><div class="action-btn-group"><button class="btn btn-outline btn-sm">詳細</button></div></td>
+              </tr>
+              <tr class="row-link">
+                <td><input type="checkbox"></td>
+                <td style="font-weight:600;color:var(--sky)">INV-2025-0137</td>
+                <td><div class="vendor-cell"><div class="vendor-logo">広</div>広告代理店アルファ</div></td>
+                <td>2025/04/20</td>
+                <td>2025/05/20</td>
+                <td class="amount-cell">¥550,000</td>
+                <td>広告宣伝費</td>
+                <td class="qualified-mark">✅ T9999...</td>
+                <td><span class="status status-approved">承認済</span></td>
+                <td>山田</td>
+                <td><div class="action-btn-group"><button class="btn btn-outline btn-sm">詳細</button></div></td>
+              </tr>
+              <tr class="row-link">
+                <td><input type="checkbox"></td>
+                <td style="font-weight:600;color:var(--sky)">INV-2025-0136</td>
+                <td><div class="vendor-cell"><div class="vendor-logo">オ</div>オフィス用品センター</div></td>
+                <td>2025/04/19</td>
+                <td>2025/05/19</td>
+                <td class="amount-cell">¥18,700</td>
+                <td>消耗品費</td>
+                <td style="color:var(--gray-400);font-size:11px">— 非適格</td>
+                <td><span class="status status-approved">承認済</span></td>
+                <td>田中</td>
+                <td><div class="action-btn-group"><button class="btn btn-outline btn-sm">詳細</button></div></td>
+              </tr>
+              <tr class="row-link">
+                <td><input type="checkbox"></td>
+                <td style="font-weight:600;color:var(--sky)">INV-2025-0135</td>
+                <td><div class="vendor-cell"><div class="vendor-logo">新</div>新幹線・交通費精算</div></td>
+                <td>2025/04/18</td>
+                <td>2025/05/18</td>
+                <td class="amount-cell">¥31,400</td>
+                <td>旅費交通費</td>
+                <td style="color:var(--gray-400);font-size:11px">— 非適格</td>
+                <td><span class="status status-approved">承認済</span></td>
+                <td>佐藤</td>
+                <td><div class="action-btn-group"><button class="btn btn-outline btn-sm">詳細</button></div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination-bar">
+          <span>142件中 1〜8件を表示</span>
+          <div class="pagination-btns">
+            <button class="page-btn">‹</button>
+            <button class="page-btn active">1</button>
+            <button class="page-btn">2</button>
+            <button class="page-btn">3</button>
+            <span style="padding:0 4px;color:var(--gray-400)">…</span>
+            <button class="page-btn">18</button>
+            <button class="page-btn">›</button>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+</body>
+</html>

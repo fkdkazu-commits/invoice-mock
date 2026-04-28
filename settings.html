@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>管理者設定 — InvoiceAI</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .settings-layout { display: grid; grid-template-columns: 200px 1fr; gap: 24px; align-items: start; }
+    .settings-nav { display: flex; flex-direction: column; gap: 2px; }
+    .settings-nav-item {
+      padding: 9px 14px; border-radius: var(--radius); font-size: 13px; font-weight: 600;
+      color: var(--gray-600); cursor: pointer; display: flex; align-items: center; gap: 8px;
+      transition: all .15s;
+    }
+    .settings-nav-item:hover { background: var(--gray-100); }
+    .settings-nav-item.active { background: var(--sky-light); color: var(--sky-dark); }
+    .settings-section { margin-bottom: 28px; }
+    .settings-section-title {
+      font-size: 14px; font-weight: 800; color: var(--gray-800);
+      margin-bottom: 14px; padding-bottom: 8px; border-bottom: 2px solid var(--gray-100);
+    }
+    .toggle-row {
+      display: flex; align-items: center; gap: 16px;
+      padding: 12px 0; border-bottom: 1px solid var(--gray-100);
+    }
+    .toggle-row:last-child { border-bottom: none; }
+    .toggle-info { flex: 1; }
+    .toggle-title { font-size: 13px; font-weight: 600; }
+    .toggle-desc { font-size: 11px; color: var(--gray-400); margin-top: 2px; }
+    .toggle {
+      width: 40px; height: 22px; background: var(--gray-200); border-radius: 999px;
+      position: relative; cursor: pointer; flex-shrink: 0; border: none;
+      transition: background .2s;
+    }
+    .toggle::after {
+      content: ''; position: absolute; top: 3px; left: 3px;
+      width: 16px; height: 16px; background: #fff; border-radius: 50%;
+      transition: left .2s; box-shadow: 0 1px 3px rgba(0,0,0,.2);
+    }
+    .toggle.on { background: var(--sky); }
+    .toggle.on::after { left: 21px; }
+    .user-table-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--gray-100); }
+    .user-table-row:last-child { border-bottom: none; }
+    .user-avatar-sm { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #fff; flex-shrink: 0; }
+    .user-table-info { flex: 1; }
+    .user-table-name { font-size: 13px; font-weight: 600; }
+    .user-table-email { font-size: 11px; color: var(--gray-400); }
+    .role-badge {
+      font-size: 11px; font-weight: 700; padding: 2px 10px; border-radius: 999px;
+    }
+    .role-admin { background: var(--navy); color: #fff; }
+    .role-approver { background: var(--sky-light); color: var(--sky-dark); }
+    .role-staff { background: var(--gray-100); color: var(--gray-600); }
+    .threshold-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--gray-100); }
+    .threshold-row:last-child { border-bottom: none; }
+    .threshold-label { flex: 1; font-size: 13px; font-weight: 600; }
+    .threshold-sub { font-size: 11px; color: var(--gray-400); }
+    .threshold-input { display: flex; align-items: center; gap: 6px; }
+    .threshold-input input { width: 80px; }
+    .folder-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--gray-100); }
+    .folder-icon { font-size: 20px; flex-shrink: 0; }
+    .folder-info { flex: 1; }
+    .folder-name { font-size: 13px; font-weight: 600; }
+    .folder-path { font-size: 11px; color: var(--gray-400); font-family: monospace; }
+    .folder-status { flex-shrink: 0; }
+    .api-key-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--gray-100); }
+    .api-key-name { width: 140px; font-size: 13px; font-weight: 600; flex-shrink: 0; }
+    .api-key-value { flex: 1; font-family: monospace; font-size: 12px; color: var(--gray-400); background: var(--gray-50); padding: 5px 10px; border-radius: 4px; }
+    .api-key-status { flex-shrink: 0; }
+  </style>
+</head>
+<body>
+<div class="app-layout">
+
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">📄</div>
+      <div class="sidebar-logo-text">InvoiceAI<span>請求書自動処理</span></div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">メニュー</div>
+      <a class="nav-item" href="dashboard.html"><span class="nav-icon">🏠</span>ダッシュボード</a>
+      <a class="nav-item" href="upload.html"><span class="nav-icon">📤</span>請求書アップロード</a>
+      <a class="nav-item" href="ocr-confirm.html"><span class="nav-icon">🔍</span>OCR結果確認<span class="nav-badge">3</span></a>
+      <a class="nav-item" href="approval.html"><span class="nav-icon">✅</span>承認フロー<span class="nav-badge">5</span></a>
+      <a class="nav-item" href="list.html"><span class="nav-icon">📋</span>ステータス一覧</a>
+      <div class="nav-section-label">管理</div>
+      <a class="nav-item active" href="settings.html"><span class="nav-icon">⚙️</span>管理者設定</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-avatar">山</div>
+      <div class="user-info">
+        <div class="user-name">山田 太郎</div>
+        <div class="user-role">経理部マネージャー</div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <header class="top-header">
+      <span class="page-title">管理者設定</span>
+      <div class="header-actions">
+        <button class="header-icon-btn">🔔</button>
+        <button class="btn btn-outline btn-sm">変更を破棄</button>
+        <button class="btn btn-primary">変更を保存</button>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <div class="settings-layout">
+
+        <!-- サイドナビ -->
+        <div>
+          <div class="card" style="padding:8px">
+            <div class="settings-nav">
+              <div class="settings-nav-item active">👥 ユーザー管理</div>
+              <div class="settings-nav-item">🔄 承認ルール</div>
+              <div class="settings-nav-item">🤖 OCR設定</div>
+              <div class="settings-nav-item">📁 フォルダ連携</div>
+              <div class="settings-nav-item">📊 Google Sheets</div>
+              <div class="settings-nav-item">🔔 通知設定</div>
+              <div class="settings-nav-item">🔑 API連携</div>
+              <div class="settings-nav-item">🛡 セキュリティ</div>
+              <div class="settings-nav-item">📥 バックアップ</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 設定コンテンツ -->
+        <div>
+
+          <!-- ユーザー管理 -->
+          <div class="card" style="margin-bottom:20px">
+            <div class="card-header">
+              <span class="card-title">👥 ユーザー管理</span>
+              <button class="btn btn-primary btn-sm">＋ ユーザー追加</button>
+            </div>
+            <div class="card-body">
+              <div class="user-table-row">
+                <div class="user-avatar-sm" style="background:var(--navy)">山</div>
+                <div class="user-table-info">
+                  <div class="user-table-name">山田 太郎</div>
+                  <div class="user-table-email">yamada@sample-corp.co.jp</div>
+                </div>
+                <span class="role-badge role-admin">管理者</span>
+                <button class="btn btn-outline btn-sm">編集</button>
+              </div>
+              <div class="user-table-row">
+                <div class="user-avatar-sm" style="background:#7c3aed">鈴</div>
+                <div class="user-table-info">
+                  <div class="user-table-name">鈴木 一郎</div>
+                  <div class="user-table-email">suzuki@sample-corp.co.jp</div>
+                </div>
+                <span class="role-badge role-approver">承認者</span>
+                <button class="btn btn-outline btn-sm">編集</button>
+              </div>
+              <div class="user-table-row">
+                <div class="user-avatar-sm" style="background:#0891b2">田</div>
+                <div class="user-table-info">
+                  <div class="user-table-name">田中 花子</div>
+                  <div class="user-table-email">tanaka@sample-corp.co.jp</div>
+                </div>
+                <span class="role-badge role-staff">担当者</span>
+                <button class="btn btn-outline btn-sm">編集</button>
+              </div>
+              <div class="user-table-row">
+                <div class="user-avatar-sm" style="background:#059669">佐</div>
+                <div class="user-table-info">
+                  <div class="user-table-name">佐藤 健太</div>
+                  <div class="user-table-email">sato@sample-corp.co.jp</div>
+                </div>
+                <span class="role-badge role-staff">担当者</span>
+                <button class="btn btn-outline btn-sm">編集</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 承認ルール -->
+          <div class="card" style="margin-bottom:20px">
+            <div class="card-header">
+              <span class="card-title">🔄 承認ルール設定</span>
+            </div>
+            <div class="card-body">
+              <div class="threshold-row">
+                <div>
+                  <div class="threshold-label">省略承認（自動承認）</div>
+                  <div class="threshold-sub">以下の金額は担当者確認のみで完了</div>
+                </div>
+                <div class="threshold-input">
+                  <span style="font-size:13px;color:var(--gray-400)">¥</span>
+                  <input type="text" class="form-control" value="50,000" style="width:100px">
+                  <span style="font-size:13px;color:var(--gray-400)">未満</span>
+                </div>
+              </div>
+              <div class="threshold-row">
+                <div>
+                  <div class="threshold-label">部長承認ライン</div>
+                  <div class="threshold-sub">上記以上この金額未満は部長承認が必要</div>
+                </div>
+                <div class="threshold-input">
+                  <span style="font-size:13px;color:var(--gray-400)">¥</span>
+                  <input type="text" class="form-control" value="1,000,000" style="width:100px">
+                  <span style="font-size:13px;color:var(--gray-400)">未満</span>
+                </div>
+              </div>
+              <div class="threshold-row">
+                <div>
+                  <div class="threshold-label">役員承認ライン</div>
+                  <div class="threshold-sub">以上の金額は役員承認が必要</div>
+                </div>
+                <div class="threshold-input">
+                  <span style="font-size:13px;color:var(--gray-400)">¥</span>
+                  <input type="text" class="form-control" value="1,000,000" style="width:100px">
+                  <span style="font-size:13px;color:var(--gray-400)">以上</span>
+                </div>
+              </div>
+              <div class="threshold-row">
+                <div>
+                  <div class="threshold-label">承認期日（デフォルト）</div>
+                  <div class="threshold-sub">承認依頼から何営業日以内に対応するか</div>
+                </div>
+                <div class="threshold-input">
+                  <input type="number" class="form-control" value="3" style="width:70px">
+                  <span style="font-size:13px;color:var(--gray-400)">営業日</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- OCR設定 -->
+          <div class="card" style="margin-bottom:20px">
+            <div class="card-header">
+              <span class="card-title">🤖 OCR・AI設定</span>
+            </div>
+            <div class="card-body">
+              <div class="toggle-row">
+                <div class="toggle-info">
+                  <div class="toggle-title">Claude AI補完を有効化</div>
+                  <div class="toggle-desc">低信頼度フィールドをClaude AIで自動補完する</div>
+                </div>
+                <button class="toggle on"></button>
+              </div>
+              <div class="toggle-row">
+                <div class="toggle-info">
+                  <div class="toggle-title">手書き書類の特別処理</div>
+                  <div class="toggle-desc">手書き請求書を検知した場合にAI補完を強化する</div>
+                </div>
+                <button class="toggle on"></button>
+              </div>
+              <div class="toggle-row">
+                <div class="toggle-info">
+                  <div class="toggle-title">適格請求書番号の自動検証</div>
+                  <div class="toggle-desc">T+13桁の登録番号を自動検出してインボイス区分を判定</div>
+                </div>
+                <button class="toggle on"></button>
+              </div>
+              <div class="toggle-row">
+                <div class="toggle-info">
+                  <div class="toggle-title">低信頼度フィールドの自動フラグ</div>
+                  <div class="toggle-desc">信頼度がしきい値未満のフィールドを要確認としてハイライト</div>
+                </div>
+                <button class="toggle on"></button>
+              </div>
+              <div style="margin-top:16px">
+                <div class="threshold-row">
+                  <div>
+                    <div class="threshold-label">OCR信頼度しきい値</div>
+                    <div class="threshold-sub">これ未満のフィールドは要確認フラグが付く</div>
+                  </div>
+                  <div class="threshold-input">
+                    <input type="number" class="form-control" value="80" style="width:70px">
+                    <span style="font-size:13px;color:var(--gray-400)">%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 通知設定 -->
+          <div class="card" style="margin-bottom:20px">
+            <div class="card-header">
+              <span class="card-title">🔔 通知設定</span>
+            </div>
+            <div class="card-body">
+              <div class="toggle-row">
+                <div class="toggle-info">
+                  <div class="toggle-title">メール通知（承認依頼）</div>
+                  <div class="toggle-desc">新しい承認依頼があった際にメールを送信</div>
+                </div>
+                <button class="toggle on"></button>
+              </div>
+              <div class="toggle-row">
+                <div class="toggle-info">
+                  <div class="toggle-title">期日リマインダー</div>
+                  <div class="toggle-desc">支払期日の3日前・1日前に担当者へメール通知</div>
+                </div>
+                <button class="toggle on"></button>
+              </div>
+              <div class="toggle-row">
+                <div class="toggle-info">
+                  <div class="toggle-title">エラー発生通知</div>
+                  <div class="toggle-desc">OCR処理エラーが発生した際に管理者へ通知</div>
+                </div>
+                <button class="toggle on"></button>
+              </div>
+              <div class="toggle-row">
+                <div class="toggle-info">
+                  <div class="toggle-title">月次レポート（自動送信）</div>
+                  <div class="toggle-desc">毎月1日に先月の処理サマリーをメール送信</div>
+                </div>
+                <button class="toggle"></button>
+              </div>
+              <div style="margin-top:16px">
+                <label class="form-label">通知先メールアドレス</label>
+                <input type="email" class="form-control" value="invoice-notify@sample-corp.co.jp">
+              </div>
+            </div>
+          </div>
+
+          <!-- API連携 -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">🔑 API連携状況</span>
+            </div>
+            <div class="card-body">
+              <div class="api-key-row">
+                <div class="api-key-name">AWS Textract</div>
+                <div class="api-key-value">AKIA••••••••••••XXXX</div>
+                <span class="status status-approved api-key-status">接続済</span>
+                <button class="btn btn-outline btn-sm">変更</button>
+              </div>
+              <div class="api-key-row">
+                <div class="api-key-name">Anthropic Claude</div>
+                <div class="api-key-value">sk-ant-••••••••••••••••••••XXXX</div>
+                <span class="status status-approved api-key-status">接続済</span>
+                <button class="btn btn-outline btn-sm">変更</button>
+              </div>
+              <div class="api-key-row">
+                <div class="api-key-name">Google Sheets</div>
+                <div class="api-key-value">サービスアカウント認証済み</div>
+                <span class="status status-approved api-key-status">接続済</span>
+                <button class="btn btn-outline btn-sm">変更</button>
+              </div>
+              <div class="api-key-row">
+                <div class="api-key-name">Slack通知（任意）</div>
+                <div class="api-key-value">未設定</div>
+                <span class="status status-pending api-key-status">未接続</span>
+                <button class="btn btn-primary btn-sm">設定</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+</body>
+</html>

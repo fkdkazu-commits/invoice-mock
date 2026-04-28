@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>承認フロー — InvoiceAI</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .approval-grid { display: grid; grid-template-columns: 1fr 380px; gap: 20px; align-items: start; }
+    .approval-card {
+      background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--radius);
+      padding: 16px; cursor: pointer; transition: all .15s;
+      display: flex; align-items: flex-start; gap: 14px;
+    }
+    .approval-card:hover { border-color: var(--sky); box-shadow: var(--shadow-md); }
+    .approval-card.selected { border-color: var(--sky); box-shadow: 0 0 0 3px rgba(33,150,243,.1); }
+    .approval-card.urgent { border-left: 4px solid var(--red); }
+    .approval-card-icon { width: 40px; height: 40px; border-radius: 8px; background: var(--sky-light); display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+    .approval-card-body { flex: 1; min-width: 0; }
+    .approval-card-title { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+    .approval-card-meta { font-size: 11px; color: var(--gray-400); line-height: 1.6; }
+    .approval-card-amount { font-size: 15px; font-weight: 800; text-align: right; flex-shrink: 0; }
+    .approval-card-deadline { font-size: 10px; color: var(--red); font-weight: 700; }
+    .detail-section { margin-bottom: 16px; }
+    .detail-row { display: flex; padding: 8px 0; border-bottom: 1px solid var(--gray-100); font-size: 13px; }
+    .detail-row:last-child { border-bottom: none; }
+    .detail-key { color: var(--gray-400); width: 120px; flex-shrink: 0; font-size: 12px; }
+    .detail-val { flex: 1; font-weight: 600; }
+    .flow-steps { display: flex; flex-direction: column; gap: 0; margin-bottom: 16px; }
+    .flow-step { display: flex; gap: 12px; }
+    .flow-step-left { display: flex; flex-direction: column; align-items: center; width: 32px; flex-shrink: 0; }
+    .flow-step-dot { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--gray-200); display: flex; align-items: center; justify-content: center; font-size: 12px; background: var(--white); flex-shrink: 0; }
+    .flow-step-dot.done { background: var(--green); border-color: var(--green); color: #fff; }
+    .flow-step-dot.active { background: var(--sky); border-color: var(--sky); color: #fff; }
+    .flow-step-line { width: 2px; flex: 1; background: var(--gray-200); min-height: 20px; }
+    .flow-step-line.done { background: var(--green); }
+    .flow-step-content { padding: 4px 0 16px; }
+    .flow-step-name { font-size: 13px; font-weight: 700; }
+    .flow-step-info { font-size: 11px; color: var(--gray-400); margin-top: 2px; }
+    .comment-box { background: var(--gray-50); border-radius: var(--radius); padding: 12px; font-size: 12px; color: var(--gray-600); margin-top: 6px; border-left: 3px solid var(--sky); }
+    .tab-count { font-size: 11px; background: var(--gray-100); color: var(--gray-600); padding: 1px 7px; border-radius: 999px; margin-left: 6px; }
+    .tab-count.red { background: var(--red-bg); color: var(--red); }
+    .reason-textarea { width: 100%; padding: 9px 12px; border: 1px solid var(--gray-200); border-radius: var(--radius); font-size: 13px; font-family: inherit; resize: vertical; min-height: 72px; outline: none; }
+    .reason-textarea:focus { border-color: var(--sky); box-shadow: 0 0 0 3px rgba(33,150,243,.1); }
+  </style>
+</head>
+<body>
+<div class="app-layout">
+
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">📄</div>
+      <div class="sidebar-logo-text">InvoiceAI<span>請求書自動処理</span></div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">メニュー</div>
+      <a class="nav-item" href="dashboard.html"><span class="nav-icon">🏠</span>ダッシュボード</a>
+      <a class="nav-item" href="upload.html"><span class="nav-icon">📤</span>請求書アップロード</a>
+      <a class="nav-item" href="ocr-confirm.html"><span class="nav-icon">🔍</span>OCR結果確認<span class="nav-badge">3</span></a>
+      <a class="nav-item active" href="approval.html"><span class="nav-icon">✅</span>承認フロー<span class="nav-badge">5</span></a>
+      <a class="nav-item" href="list.html"><span class="nav-icon">📋</span>ステータス一覧</a>
+      <div class="nav-section-label">管理</div>
+      <a class="nav-item" href="settings.html"><span class="nav-icon">⚙️</span>管理者設定</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-avatar">鈴</div>
+      <div class="user-info">
+        <div class="user-name">鈴木 部長</div>
+        <div class="user-role">承認権限あり</div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <header class="top-header">
+      <span class="page-title">承認フロー</span>
+      <div class="header-actions">
+        <button class="header-icon-btn">🔔<span class="notif-dot"></span></button>
+        <button class="btn btn-outline btn-sm">一括承認</button>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <!-- タブ -->
+      <div class="tabs">
+        <div class="tab-item active">承認待ち <span class="tab-count red">5</span></div>
+        <div class="tab-item">承認済み <span class="tab-count">38</span></div>
+        <div class="tab-item">差し戻し <span class="tab-count">2</span></div>
+        <div class="tab-item">全て <span class="tab-count">45</span></div>
+      </div>
+
+      <div class="approval-grid">
+        <!-- 左: 承認待ちリスト -->
+        <div style="display:flex;flex-direction:column;gap:10px">
+
+          <!-- 期日が近いもの -->
+          <div style="font-size:11px;font-weight:700;color:var(--red);margin-bottom:2px">⚠️ 期日24時間以内</div>
+
+          <div class="approval-card urgent selected">
+            <div class="approval-card-icon">🏭</div>
+            <div class="approval-card-body">
+              <div class="approval-card-title">株式会社サンプル商事</div>
+              <div class="approval-card-meta">
+                INV-2025-0141 ・ 仕入高 ・ 適格✓<br>
+                申請者：田中さん ・ 4月26日提出
+              </div>
+              <span class="approval-card-deadline">⏰ 明日 17:00 期限</span>
+            </div>
+            <div>
+              <div class="approval-card-amount">¥330,000</div>
+              <span class="status status-pending" style="float:right;margin-top:6px">待ち</span>
+            </div>
+          </div>
+
+          <div class="approval-card urgent">
+            <div class="approval-card-icon">💡</div>
+            <div class="approval-card-body">
+              <div class="approval-card-title">東日本電力サービス株式会社</div>
+              <div class="approval-card-meta">
+                INV-2025-0139 ・ 光熱費 ・ 適格✓<br>
+                申請者：田中さん ・ 4月25日提出
+              </div>
+              <span class="approval-card-deadline">⏰ 本日 18:00 期限</span>
+            </div>
+            <div>
+              <div class="approval-card-amount">¥42,350</div>
+              <span class="status status-pending" style="float:right;margin-top:6px">待ち</span>
+            </div>
+          </div>
+
+          <div style="font-size:11px;font-weight:700;color:var(--gray-400);margin-top:8px;margin-bottom:2px">通常</div>
+
+          <div class="approval-card">
+            <div class="approval-card-icon">📦</div>
+            <div class="approval-card-body">
+              <div class="approval-card-title">テスト印刷株式会社</div>
+              <div class="approval-card-meta">
+                INV-2025-0138 ・ 消耗品費 ・ 適格✓<br>
+                申請者：佐藤さん ・ 4月24日提出
+              </div>
+            </div>
+            <div>
+              <div class="approval-card-amount">¥88,000</div>
+              <span class="status status-pending" style="float:right;margin-top:6px">待ち</span>
+            </div>
+          </div>
+
+          <div class="approval-card">
+            <div class="approval-card-icon">🚚</div>
+            <div class="approval-card-body">
+              <div class="approval-card-title">山本物流サービス</div>
+              <div class="approval-card-meta">
+                INV-2025-0137 ・ 外注費 ・ 適格✓<br>
+                申請者：田中さん ・ 4月23日提出
+              </div>
+            </div>
+            <div>
+              <div class="approval-card-amount">¥154,000</div>
+              <span class="status status-pending" style="float:right;margin-top:6px">待ち</span>
+            </div>
+          </div>
+
+          <div class="approval-card">
+            <div class="approval-card-icon">🖥️</div>
+            <div class="approval-card-body">
+              <div class="approval-card-title">株式会社IT Solutions</div>
+              <div class="approval-card-meta">
+                INV-2025-0136 ・ 外注費 ・ 適格✓<br>
+                申請者：佐藤さん ・ 4月22日提出
+              </div>
+            </div>
+            <div>
+              <div class="approval-card-amount">¥220,000</div>
+              <span class="status status-pending" style="float:right;margin-top:6px">待ち</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- 右: 詳細パネル -->
+        <div>
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-header">
+              <span class="card-title">📋 請求書詳細</span>
+              <span class="chip chip-red">期日間近</span>
+            </div>
+            <div class="card-body" style="padding:0 0 0">
+              <div style="padding:16px 20px">
+                <div class="detail-row"><div class="detail-key">取引先</div><div class="detail-val">株式会社サンプル商事</div></div>
+                <div class="detail-row"><div class="detail-key">請求書番号</div><div class="detail-val">INV-2025-0141</div></div>
+                <div class="detail-row"><div class="detail-key">発行日</div><div class="detail-val">2025年4月26日</div></div>
+                <div class="detail-row"><div class="detail-key">支払期限</div><div class="detail-val" style="color:var(--red);font-weight:700">2025年4月28日</div></div>
+                <div class="detail-row"><div class="detail-key">金額（税抜）</div><div class="detail-val">¥300,000</div></div>
+                <div class="detail-row"><div class="detail-key">消費税（10%）</div><div class="detail-val">¥30,000</div></div>
+                <div class="detail-row"><div class="detail-key">請求金額</div><div class="detail-val" style="font-size:16px;font-weight:800;color:var(--navy)">¥330,000</div></div>
+                <div class="detail-row"><div class="detail-key">勘定科目</div><div class="detail-val">仕入高</div></div>
+                <div class="detail-row"><div class="detail-key">適格請求書</div><div class="detail-val"><span style="color:var(--green);font-weight:700">✅ 適格（T9876543210123）</span></div></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 承認フローステップ -->
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-header">
+              <span class="card-title">📊 承認フロー</span>
+            </div>
+            <div class="card-body">
+              <div class="flow-steps">
+                <div class="flow-step">
+                  <div class="flow-step-left">
+                    <div class="flow-step-dot done">✓</div>
+                    <div class="flow-step-line done"></div>
+                  </div>
+                  <div class="flow-step-content">
+                    <div class="flow-step-name">OCR確認</div>
+                    <div class="flow-step-info">田中さん ・ 4/26 14:32 完了</div>
+                  </div>
+                </div>
+                <div class="flow-step">
+                  <div class="flow-step-left">
+                    <div class="flow-step-dot active">▶</div>
+                    <div class="flow-step-line"></div>
+                  </div>
+                  <div class="flow-step-content">
+                    <div class="flow-step-name" style="color:var(--sky)">部長承認（現在）</div>
+                    <div class="flow-step-info">鈴木部長・待機中</div>
+                  </div>
+                </div>
+                <div class="flow-step">
+                  <div class="flow-step-left">
+                    <div class="flow-step-dot">3</div>
+                    <div class="flow-step-line"></div>
+                  </div>
+                  <div class="flow-step-content">
+                    <div class="flow-step-name" style="color:var(--gray-400)">経理処理・完了</div>
+                    <div class="flow-step-info">承認後に自動進行</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 承認アクション -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">✍️ 承認アクション</span>
+            </div>
+            <div class="card-body">
+              <div class="form-group">
+                <label class="form-label">コメント（任意）</label>
+                <textarea class="reason-textarea" placeholder="承認コメントや差し戻し理由を入力..."></textarea>
+              </div>
+              <div style="display:flex;gap:10px">
+                <button class="btn btn-danger" style="flex:1">
+                  ✕ 差し戻し
+                </button>
+                <a href="list.html" style="flex:2">
+                  <button class="btn btn-success btn-lg" style="width:100%">
+                    ✅ 承認する
+                  </button>
+                </a>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+</body>
+</html>
