@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>InvoiceAI システム開発提案書</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy: #1a2e4a;
+      --navy-mid: #1e3a5f;
+      --sky: #2196f3;
+      --sky-light: #e3f2fd;
+      --sky-dark: #1565c0;
+      --white: #ffffff;
+      --gray-50: #f8fafc;
+      --gray-100: #f1f5f9;
+      --gray-200: #e2e8f0;
+      --gray-400: #94a3b8;
+      --gray-600: #475569;
+      --gray-800: #1e293b;
+      --green: #22c55e;
+      --green-bg: #f0fdf4;
+      --yellow: #f59e0b;
+      --yellow-bg: #fffbeb;
+      --red: #ef4444;
+      --red-bg: #fef2f2;
+      --radius: 8px;
+    }
+    body {
+      font-family: 'Segoe UI', 'Hiragino Sans', 'Yu Gothic UI', sans-serif;
+      font-size: 14px;
+      color: var(--gray-800);
+      background: var(--white);
+      line-height: 1.7;
+    }
+    a { color: var(--sky); }
+
+    /* ===== COVER ===== */
+    .cover {
+      background: var(--navy);
+      color: var(--white);
+      padding: 64px 80px;
+      min-height: 280px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .cover-label {
+      font-size: 12px; font-weight: 700; letter-spacing: .12em;
+      text-transform: uppercase; color: var(--sky); margin-bottom: 16px;
+    }
+    .cover-title { font-size: 32px; font-weight: 800; line-height: 1.3; margin-bottom: 12px; }
+    .cover-sub { font-size: 15px; color: #94a3b8; margin-bottom: 28px; }
+    .cover-meta { display: flex; gap: 32px; font-size: 13px; color: #64748b; }
+    .cover-meta span { color: #cbd5e1; font-weight: 600; }
+
+    /* ===== BODY ===== */
+    .doc-body { max-width: 860px; margin: 0 auto; padding: 48px 40px 80px; }
+
+    /* ===== SECTION ===== */
+    .section { margin-bottom: 48px; }
+    .section-header {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 20px; padding-bottom: 10px;
+      border-bottom: 2px solid var(--gray-200);
+    }
+    .section-num {
+      width: 28px; height: 28px; border-radius: 6px;
+      background: var(--navy); color: var(--white);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 800; flex-shrink: 0;
+    }
+    .section-title { font-size: 18px; font-weight: 800; color: var(--gray-800); }
+
+    /* ===== SUMMARY BOX ===== */
+    .summary-box {
+      background: var(--sky-light); border-left: 4px solid var(--sky);
+      border-radius: var(--radius); padding: 16px 20px;
+      margin-bottom: 24px; font-size: 13px; line-height: 1.8;
+    }
+
+    /* ===== CAPABILITY TABLE ===== */
+    .cap-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+    .cap-table th {
+      background: var(--gray-800); color: var(--white);
+      padding: 10px 16px; text-align: left; font-size: 12px;
+      font-weight: 700; letter-spacing: .04em;
+    }
+    .cap-table th:first-child { border-radius: 8px 0 0 0; }
+    .cap-table th:last-child { border-radius: 0 8px 0 0; }
+    .cap-table td {
+      padding: 11px 16px; border-bottom: 1px solid var(--gray-100);
+      font-size: 13px; vertical-align: top;
+    }
+    .cap-table tr:last-child td { border-bottom: none; }
+    .cap-table tr:hover td { background: var(--gray-50); }
+    .cap-table .cat-cell {
+      font-weight: 700; font-size: 12px; color: var(--gray-600);
+      white-space: nowrap; width: 130px;
+    }
+
+    /* ===== STATUS MARK ===== */
+    .mark-ok   { color: #15803d; font-weight: 700; }
+    .mark-ng   { color: var(--red); font-weight: 700; }
+
+    /* ===== PHASE CARDS ===== */
+    .phase-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .phase-card {
+      border: 1px solid var(--gray-200); border-radius: 10px;
+      overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    }
+    .phase-head {
+      padding: 14px 18px; color: var(--white); font-weight: 800; font-size: 14px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .phase-head.ph1 { background: var(--sky-dark); }
+    .phase-head.ph2 { background: #7c3aed; }
+    .phase-head.ph3 { background: #059669; }
+    .phase-head.ph4 { background: var(--yellow); }
+    .phase-head .phase-tag {
+      background: rgba(255,255,255,.2); font-size: 11px; font-weight: 700;
+      padding: 2px 8px; border-radius: 999px;
+    }
+    .phase-body { padding: 14px 18px; background: var(--white); }
+    .phase-item {
+      display: flex; align-items: flex-start; gap: 8px;
+      padding: 5px 0; border-bottom: 1px solid var(--gray-100);
+      font-size: 12px; line-height: 1.5;
+    }
+    .phase-item:last-child { border-bottom: none; }
+    .phase-dot { width: 6px; height: 6px; border-radius: 50%; margin-top: 6px; flex-shrink: 0; }
+    .phase-period {
+      margin-top: 12px; font-size: 12px; font-weight: 700;
+      color: var(--gray-400); text-align: right;
+    }
+
+    /* ===== TECH STACK ===== */
+    .tech-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .tech-card {
+      border: 1px solid var(--gray-200); border-radius: var(--radius);
+      padding: 14px 16px;
+    }
+    .tech-card-label { font-size: 11px; font-weight: 700; color: var(--gray-400); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
+    .tech-item { font-size: 13px; font-weight: 600; padding: 4px 0; display: flex; align-items: center; gap: 6px; }
+    .tech-item::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--sky); flex-shrink: 0; }
+
+    /* ===== COST TABLE ===== */
+    .cost-table { width: 100%; border-collapse: collapse; }
+    .cost-table th {
+      background: var(--gray-100); padding: 10px 16px; text-align: left;
+      font-size: 12px; font-weight: 700; color: var(--gray-600);
+      border-bottom: 2px solid var(--gray-200);
+    }
+    .cost-table td { padding: 11px 16px; border-bottom: 1px solid var(--gray-100); font-size: 13px; }
+    .cost-table tr:last-child td { border-bottom: none; }
+    .cost-table .total-row td { font-weight: 800; background: var(--gray-50); font-size: 14px; }
+    .cost-note { font-size: 11px; color: var(--gray-400); margin-top: 10px; }
+
+    /* ===== MERIT ===== */
+    .merit-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+    .merit-card {
+      background: var(--gray-50); border-radius: var(--radius);
+      padding: 16px; text-align: center; border: 1px solid var(--gray-200);
+    }
+    .merit-icon { font-size: 28px; margin-bottom: 8px; }
+    .merit-value { font-size: 22px; font-weight: 800; color: var(--navy); line-height: 1; }
+    .merit-label { font-size: 12px; color: var(--gray-400); margin-top: 4px; }
+    .merit-desc { font-size: 11px; color: var(--gray-600); margin-top: 8px; line-height: 1.5; }
+
+    /* ===== FLOW ===== */
+    .flow-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+    .flow-box {
+      background: var(--navy); color: var(--white);
+      padding: 10px 16px; border-radius: var(--radius);
+      font-size: 12px; font-weight: 700; text-align: center; min-width: 90px;
+    }
+    .flow-box.light { background: var(--sky-light); color: var(--sky-dark); }
+    .flow-arrow { font-size: 18px; color: var(--gray-300); }
+
+    /* ===== FOOTER ===== */
+    .doc-footer {
+      background: var(--gray-100); border-top: 1px solid var(--gray-200);
+      padding: 24px 80px; font-size: 12px; color: var(--gray-400);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+
+    /* ===== CHIP ===== */
+    .chip {
+      display: inline-flex; align-items: center;
+      padding: 2px 10px; border-radius: 999px;
+      font-size: 11px; font-weight: 700;
+    }
+    .chip-sky { background: var(--sky-light); color: var(--sky-dark); }
+    .chip-green { background: var(--green-bg); color: #15803d; }
+    .chip-red { background: var(--red-bg); color: #b91c1c; }
+    .chip-yellow { background: var(--yellow-bg); color: #92400e; }
+
+    /* ===== PRINT ===== */
+    @media print {
+      .cover { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .phase-head { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .cost-table .total-row td { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+    @media (max-width: 700px) {
+      .cover { padding: 40px 24px; }
+      .doc-body { padding: 32px 20px 60px; }
+      .phase-grid, .tech-grid, .merit-grid { grid-template-columns: 1fr; }
+      .doc-footer { flex-direction: column; gap: 8px; padding: 20px 24px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ===== COVER ===== -->
+<div class="cover">
+  <div class="cover-label">システム開発提案書</div>
+  <div class="cover-title">InvoiceAI<br>請求書AI自動処理システム</div>
+  <div class="cover-sub">モック確認 → 本番開発へのロードマップ</div>
+  <div class="cover-meta">
+    作成日：<span>2025年4月28日</span>
+    &nbsp;&nbsp;対象：<span>経理業務担当部門</span>
+    &nbsp;&nbsp;バージョン：<span>v1.0</span>
+  </div>
+</div>
+
+<!-- ===== BODY ===== -->
+<div class="doc-body">
+
+  <!-- 0. エグゼクティブサマリー -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">0</div>
+      <div class="section-title">エグゼクティブサマリー</div>
+    </div>
+    <div class="summary-box">
+      今回ご確認いただいたデモは、<strong>7画面のUIモック</strong>です。画面デザイン・操作フロー・機能イメージはすべて確認できますが、データの保存・AI処理・外部連携はまだ動作しません。<br>
+      本提案書では「現在できること／できないこと」を整理し、本番システムとして稼働させるために必要な開発内容と費用感を提示します。
+    </div>
+  </div>
+
+  <!-- 1. 現状のモックでできること・できないこと -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <div class="section-title">現状のモックでできること・できないこと</div>
+    </div>
+
+    <table class="cap-table">
+      <thead>
+        <tr>
+          <th>機能</th>
+          <th>内容</th>
+          <th style="width:90px;text-align:center">現状</th>
+          <th>本番化に必要なこと</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- できること -->
+        <tr>
+          <td class="cat-cell">画面デザイン確認</td>
+          <td>7画面のレイアウト・カラー・フォント・余白感</td>
+          <td style="text-align:center"><span class="mark-ok">✅ 可</span></td>
+          <td style="color:var(--gray-400)">—</td>
+        </tr>
+        <tr>
+          <td class="cat-cell">操作フロー確認</td>
+          <td>アップロード→OCR→確認→承認→完了の流れ</td>
+          <td style="text-align:center"><span class="mark-ok">✅ 可</span></td>
+          <td style="color:var(--gray-400)">—</td>
+        </tr>
+        <tr>
+          <td class="cat-cell">UI部品確認</td>
+          <td>ボタン・テーブル・フォーム・バッジ・モーダル</td>
+          <td style="text-align:center"><span class="mark-ok">✅ 可</span></td>
+          <td style="color:var(--gray-400)">—</td>
+        </tr>
+        <tr>
+          <td class="cat-cell">デモ共有</td>
+          <td>URLをお伝えすればブラウザで即確認可能</td>
+          <td style="text-align:center"><span class="mark-ok">✅ 可</span></td>
+          <td style="color:var(--gray-400)">—</td>
+        </tr>
+        <!-- できないこと -->
+        <tr style="background:#fefefe">
+          <td class="cat-cell">ログイン認証</td>
+          <td>入力値チェック・本人確認・セッション管理</td>
+          <td style="text-align:center"><span class="mark-ng">❌ 不可</span></td>
+          <td>認証サーバー・DB・セッション管理の実装</td>
+        </tr>
+        <tr>
+          <td class="cat-cell">ファイルアップロード</td>
+          <td>PDFや画像ファイルをサーバーに保存する</td>
+          <td style="text-align:center"><span class="mark-ng">❌ 不可</span></td>
+          <td>ファイルストレージ（AWS S3等）の実装</td>
+        </tr>
+        <tr>
+          <td class="cat-cell">OCR処理</td>
+          <td>請求書の文字・金額・会社名を自動読み取り</td>
+          <td style="text-align:center"><span class="mark-ng">❌ 不可</span></td>
+          <td>AWS Textract連携・Claude AI補完の接続 ※コア部分は実装済み</td>
+        </tr>
+        <tr>
+          <td class="cat-cell">データ保存</td>
+          <td>入力内容・処理結果をデータベースに保存</td>
+          <td style="text-align:center"><span class="mark-ng">❌ 不可</span></td>
+          <td>データベース（PostgreSQL等）の構築</td>
+        </tr>
+        <tr>
+          <td class="cat-cell">承認操作の反映</td>
+          <td>承認・差し戻しでステータスが実際に変わる</td>
+          <td style="text-align:center"><span class="mark-ng">❌ 不可</span></td>
+          <td>バックエンドAPI・DB更新処理の実装</td>
+        </tr>
+        <tr>
+          <td class="cat-cell">検索・フィルタ</td>
+          <td>条件を指定して一覧を絞り込む</td>
+          <td style="text-align:center"><span class="mark-ng">❌ 不可</span></td>
+          <td>DB検索クエリ・フロントエンド動的処理</td>
+        </tr>
+        <tr>
+          <td class="cat-cell">CSV出力</td>
+          <td>処理済み請求書データをExcelで受け取る</td>
+          <td style="text-align:center"><span class="mark-ng">❌ 不可</span></td>
+          <td>CSV生成処理・ダウンロード機能の実装</td>
+        </tr>
+        <tr>
+          <td class="cat-cell">Google Sheets連携</td>
+          <td>承認後に自動でスプレッドシートへ転記</td>
+          <td style="text-align:center"><span class="mark-ng">❌ 不可</span></td>
+          <td>Google Sheets API接続 ※バックエンド部分は実装済み</td>
+        </tr>
+        <tr>
+          <td class="cat-cell">メール通知</td>
+          <td>承認依頼・期日アラートをメールで通知</td>
+          <td style="text-align:center"><span class="mark-ng">❌ 不可</span></td>
+          <td>メール送信サービス（SendGrid等）の実装</td>
+        </tr>
+        <tr>
+          <td class="cat-cell">スマホ対応</td>
+          <td>スマートフォン・タブレットでの操作</td>
+          <td style="text-align:center"><span class="mark-ng">❌ 不可</span></td>
+          <td>レスポンシブCSS対応（PC画面前提で設計）</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p style="font-size:12px;color:var(--gray-400)">※「実装済み」とあるものは、別途開発したバックエンドプログラムがすでに存在しており、接続作業のみで利用可能です。</p>
+  </div>
+
+  <!-- 2. 本番システムの処理フロー -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <div class="section-title">本番システムの処理フロー（全体像）</div>
+    </div>
+
+    <div class="flow-row">
+      <div class="flow-box">① PDF<br>アップロード</div>
+      <div class="flow-arrow">›</div>
+      <div class="flow-box">② AWS S3<br>保存</div>
+      <div class="flow-arrow">›</div>
+      <div class="flow-box">③ Textract<br>OCR処理</div>
+      <div class="flow-arrow">›</div>
+      <div class="flow-box">④ Claude AI<br>補完</div>
+      <div class="flow-arrow">›</div>
+      <div class="flow-box light">⑤ 担当者<br>内容確認</div>
+    </div>
+    <div class="flow-row">
+      <div class="flow-box light">⑥ 承認フロー<br>（部長等）</div>
+      <div class="flow-arrow">›</div>
+      <div class="flow-box">⑦ DB<br>保存・完了</div>
+      <div class="flow-arrow">›</div>
+      <div class="flow-box">⑧ Google<br>Sheets転記</div>
+      <div class="flow-arrow">›</div>
+      <div class="flow-box light">⑨ CSV出力<br>／メール通知</div>
+    </div>
+    <p style="font-size:12px;color:var(--gray-400);margin-top:8px">▪ 網掛けのステップは現在のモックでUIが確認できているステップです。</p>
+  </div>
+
+  <!-- 3. 技術スタック -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <div class="section-title">本番開発に使用する技術スタック</div>
+    </div>
+
+    <div class="tech-grid">
+      <div class="tech-card">
+        <div class="tech-card-label">フロントエンド</div>
+        <div class="tech-item">HTML / CSS（現モック流用）</div>
+        <div class="tech-item">JavaScript（動的処理追加）</div>
+        <div class="tech-item">レスポンシブ対応CSS</div>
+      </div>
+      <div class="tech-card">
+        <div class="tech-card-label">バックエンド</div>
+        <div class="tech-item">Python（FastAPI）</div>
+        <div class="tech-item">認証・API・業務ロジック</div>
+        <div class="tech-item">非同期OCRジョブ処理</div>
+      </div>
+      <div class="tech-card">
+        <div class="tech-card-label">データベース</div>
+        <div class="tech-item">PostgreSQL</div>
+        <div class="tech-item">請求書・ユーザー・ログ管理</div>
+        <div class="tech-item">AWS RDS（クラウド運用）</div>
+      </div>
+      <div class="tech-card">
+        <div class="tech-card-label">AI / OCR</div>
+        <div class="tech-item">AWS Textract（文字認識）</div>
+        <div class="tech-item">Claude API（AI補完）</div>
+        <div class="tech-item">インボイス番号自動検証</div>
+      </div>
+      <div class="tech-card">
+        <div class="tech-card-label">ストレージ / 通知</div>
+        <div class="tech-item">AWS S3（PDF保管）</div>
+        <div class="tech-item">SendGrid（メール通知）</div>
+        <div class="tech-item">Google Sheets API</div>
+      </div>
+      <div class="tech-card">
+        <div class="tech-card-label">インフラ / セキュリティ</div>
+        <div class="tech-item">AWS（EC2 / ECS）</div>
+        <div class="tech-item">HTTPS / JWT認証</div>
+        <div class="tech-item">バックアップ・ログ管理</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. 開発フェーズ -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <div class="section-title">推奨開発フェーズ（4段階）</div>
+    </div>
+
+    <div class="phase-grid">
+      <div class="phase-card">
+        <div class="phase-head ph1">
+          <span>Phase 1</span>
+          <span class="phase-tag">基盤構築</span>
+        </div>
+        <div class="phase-body">
+          <div class="phase-item"><div class="phase-dot" style="background:var(--sky)"></div>ログイン認証・ユーザー管理</div>
+          <div class="phase-item"><div class="phase-dot" style="background:var(--sky)"></div>PDFアップロード・S3保存</div>
+          <div class="phase-item"><div class="phase-dot" style="background:var(--sky)"></div>データベース設計・構築</div>
+          <div class="phase-item"><div class="phase-dot" style="background:var(--sky)"></div>請求書一覧・検索・フィルタ</div>
+          <div class="phase-period">目安：3〜4週間</div>
+        </div>
+      </div>
+
+      <div class="phase-card">
+        <div class="phase-head ph2">
+          <span>Phase 2</span>
+          <span class="phase-tag">AI連携</span>
+        </div>
+        <div class="phase-body">
+          <div class="phase-item"><div class="phase-dot" style="background:#7c3aed"></div>AWS Textract OCR接続</div>
+          <div class="phase-item"><div class="phase-dot" style="background:#7c3aed"></div>Claude AI補完機能</div>
+          <div class="phase-item"><div class="phase-dot" style="background:#7c3aed"></div>適格請求書番号の自動検証</div>
+          <div class="phase-item"><div class="phase-dot" style="background:#7c3aed"></div>OCR確認画面の動態化</div>
+          <div class="phase-period">目安：3〜4週間</div>
+        </div>
+      </div>
+
+      <div class="phase-card">
+        <div class="phase-head ph3">
+          <span>Phase 3</span>
+          <span class="phase-tag">業務フロー</span>
+        </div>
+        <div class="phase-body">
+          <div class="phase-item"><div class="phase-dot" style="background:#059669"></div>承認フロー（承認・差し戻し）</div>
+          <div class="phase-item"><div class="phase-dot" style="background:#059669"></div>メール通知・期日リマインダー</div>
+          <div class="phase-item"><div class="phase-dot" style="background:#059669"></div>Google Sheets自動転記</div>
+          <div class="phase-item"><div class="phase-dot" style="background:#059669"></div>CSV出力機能</div>
+          <div class="phase-period">目安：2〜3週間</div>
+        </div>
+      </div>
+
+      <div class="phase-card">
+        <div class="phase-head ph4">
+          <span>Phase 4</span>
+          <span class="phase-tag">品質向上</span>
+        </div>
+        <div class="phase-body">
+          <div class="phase-item"><div class="phase-dot" style="background:var(--yellow)"></div>スマートフォン対応</div>
+          <div class="phase-item"><div class="phase-dot" style="background:var(--yellow)"></div>操作ログ・監査機能</div>
+          <div class="phase-item"><div class="phase-dot" style="background:var(--yellow)"></div>月次レポート自動生成</div>
+          <div class="phase-item"><div class="phase-dot" style="background:var(--yellow)"></div>負荷テスト・セキュリティ検証</div>
+          <div class="phase-period">目安：2週間</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:var(--gray-50);border:1px solid var(--gray-200);border-radius:var(--radius);padding:14px 18px;margin-top:16px;font-size:13px">
+      <strong>全体スケジュール目安：約 2.5〜3ヶ月</strong>で本番稼働可能。
+      Phase 1〜2 完了時点で「AI読み取り → 一覧管理」の中核機能が使えるため、
+      段階的な運用開始も可能です。
+    </div>
+  </div>
+
+  <!-- 5. 導入効果 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <div class="section-title">導入による業務効果（試算）</div>
+    </div>
+
+    <div class="merit-grid">
+      <div class="merit-card">
+        <div class="merit-icon">⏱️</div>
+        <div class="merit-value">87<span style="font-size:16px;font-weight:400">%</span></div>
+        <div class="merit-label">処理時間の削減</div>
+        <div class="merit-desc">手入力30分 → AI処理3〜4分に短縮。月間数百件なら数十時間の工数削減。</div>
+      </div>
+      <div class="merit-card">
+        <div class="merit-icon">📉</div>
+        <div class="merit-value">95<span style="font-size:16px;font-weight:400">%</span></div>
+        <div class="merit-label">入力ミスの削減</div>
+        <div class="merit-desc">OCR自動読み取り＋AI補完で転記ミスをほぼゼロに。差異は画面で即確認。</div>
+      </div>
+      <div class="merit-card">
+        <div class="merit-icon">🗂️</div>
+        <div class="merit-value">∞</div>
+        <div class="merit-label">ペーパーレス化</div>
+        <div class="merit-desc">PDFをクラウド保管。紛失リスクゼロ・検索が瞬時に。インボイス対応も自動判定。</div>
+      </div>
+      <div class="merit-card">
+        <div class="merit-icon">✅</div>
+        <div class="merit-value">100<span style="font-size:16px;font-weight:400">%</span></div>
+        <div class="merit-label">インボイス自動判定</div>
+        <div class="merit-desc">T+13桁の登録番号をAIが自動検出。適格・非適格を誰でも間違えず区別できる。</div>
+      </div>
+      <div class="merit-card">
+        <div class="merit-icon">📊</div>
+        <div class="merit-value">即時</div>
+        <div class="merit-label">ダッシュボード可視化</div>
+        <div class="merit-desc">処理件数・承認状況・未払い金額をリアルタイムで把握。レポート作成も不要に。</div>
+      </div>
+      <div class="merit-card">
+        <div class="merit-icon">🔒</div>
+        <div class="merit-value">完全</div>
+        <div class="merit-label">アクセス権限管理</div>
+        <div class="merit-desc">担当者・承認者・管理者で権限分離。誰が何を承認したかの履歴もすべて記録。</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. 費用感 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">6</div>
+      <div class="section-title">費用感（参考）</div>
+    </div>
+
+    <table class="cost-table">
+      <thead>
+        <tr>
+          <th>項目</th>
+          <th>内容</th>
+          <th style="text-align:right">目安</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>初期開発費</strong></td>
+          <td>Phase 1〜4 全機能開発（画面実装 + バックエンド + インフラ構築）</td>
+          <td style="text-align:right;font-weight:700">要相談</td>
+        </tr>
+        <tr>
+          <td><strong>AWS利用料</strong></td>
+          <td>EC2 + RDS + S3 + Textract（月100〜300件処理の場合）</td>
+          <td style="text-align:right;font-weight:700">¥5,000〜15,000/月</td>
+        </tr>
+        <tr>
+          <td><strong>Claude API</strong></td>
+          <td>AI補完（低信頼度フィールドのみ呼び出し。月100件想定）</td>
+          <td style="text-align:right;font-weight:700">¥500〜2,000/月</td>
+        </tr>
+        <tr>
+          <td><strong>AWS Textract</strong></td>
+          <td>OCR処理（月300ページ想定）</td>
+          <td style="text-align:right;font-weight:700">¥300〜1,500/月</td>
+        </tr>
+        <tr class="total-row">
+          <td colspan="2"><strong>ランニングコスト合計（月額目安）</strong></td>
+          <td style="text-align:right">¥6,000〜20,000/月</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="cost-note">※ 処理件数・サーバースペック・機能範囲により変動します。詳細はお見積りにて対応いたします。<br>※ AWSアカウントは貴社保有のものをそのまま利用可能です。</p>
+  </div>
+
+  <!-- 7. 次のステップ -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">7</div>
+      <div class="section-title">次のステップ</div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;gap:14px;align-items:flex-start;padding:14px 16px;background:var(--gray-50);border-radius:var(--radius);border:1px solid var(--gray-200)">
+        <div style="width:28px;height:28px;border-radius:50%;background:var(--sky);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0">1</div>
+        <div>
+          <div style="font-weight:700;margin-bottom:2px">デモ画面でフィードバックをいただく</div>
+          <div style="font-size:12px;color:var(--gray-400)">追加・変更したい画面・機能があればこの段階でご共有ください。モック修正は低コストで対応できます。</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:14px;align-items:flex-start;padding:14px 16px;background:var(--gray-50);border-radius:var(--radius);border:1px solid var(--gray-200)">
+        <div style="width:28px;height:28px;border-radius:50%;background:var(--sky);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0">2</div>
+        <div>
+          <div style="font-weight:700;margin-bottom:2px">要件定義・お見積り</div>
+          <div style="font-size:12px;color:var(--gray-400)">Phase 1から着手する範囲を決め、正式なお見積りを提示します。</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:14px;align-items:flex-start;padding:14px 16px;background:var(--gray-50);border-radius:var(--radius);border:1px solid var(--gray-200)">
+        <div style="width:28px;height:28px;border-radius:50%;background:var(--sky);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0">3</div>
+        <div>
+          <div style="font-weight:700;margin-bottom:2px">Phase 1 開発スタート</div>
+          <div style="font-size:12px;color:var(--gray-400)">認証・DB・ファイルアップロードの基盤を構築し、3〜4週間で中間デモを実施します。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===== FOOTER ===== -->
+<div class="doc-footer">
+  <span>InvoiceAI システム開発提案書 v1.0 &nbsp;／&nbsp; 2025年4月28日</span>
+  <span>本資料の内容は提案時点のものです。詳細は別途ご相談ください。</span>
+</div>
+
+</body>
+</html>
