@@ -287,6 +287,80 @@
     .combo-table tr:hover td { background: var(--gray-50); }
     .combo-price { font-weight: 800; color: var(--sky-dark); white-space: nowrap; }
 
+    /* ===== CODE BLOCK ===== */
+    .code-block {
+      background: #0f172a; color: #e2e8f0;
+      border-radius: 8px; padding: 16px 20px;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 12px; line-height: 1.8; overflow-x: auto;
+      margin-bottom: 16px;
+    }
+    .code-block .cm { color: #64748b; }
+    .code-block .ck { color: #7dd3fc; }
+    .code-block .cv { color: #86efac; }
+    .code-block .cs { color: #fde68a; }
+    .code-block .cc { color: #f9a8d4; }
+    .code-label {
+      font-size: 11px; font-weight: 700; color: var(--gray-400);
+      margin-bottom: 4px; letter-spacing: .04em;
+    }
+
+    /* ===== SAM APPROACH ===== */
+    .approach-compare {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;
+    }
+    @media (max-width: 700px) { .approach-compare { grid-template-columns: 1fr; } }
+    .approach-card {
+      border-radius: 10px; overflow: hidden;
+      border: 1px solid var(--gray-200);
+      box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    }
+    .approach-head {
+      padding: 12px 16px; font-size: 13px; font-weight: 800; color: #fff;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .approach-manual { background: #475569; }
+    .approach-sam { background: linear-gradient(135deg, #1565c0, #0891b2); }
+    .approach-body { padding: 14px 16px; background: var(--white); }
+    .approach-items { display: flex; flex-direction: column; gap: 7px; }
+    .approach-item {
+      display: flex; align-items: flex-start; gap: 8px;
+      font-size: 12px; line-height: 1.5;
+    }
+    .approach-item-icon { flex-shrink: 0; font-size: 13px; }
+
+    .sam-flow {
+      display: flex; flex-direction: column; gap: 0;
+      border: 1px solid var(--gray-200); border-radius: 10px;
+      overflow: hidden; margin-bottom: 20px;
+    }
+    .sam-flow-row {
+      display: grid; grid-template-columns: 180px 1fr 1fr;
+      border-bottom: 1px solid var(--gray-100);
+    }
+    .sam-flow-row:last-child { border-bottom: none; }
+    .sam-flow-phase {
+      padding: 12px 14px; font-size: 12px; font-weight: 700;
+      display: flex; align-items: center;
+      background: var(--gray-50); border-right: 1px solid var(--gray-100);
+    }
+    .sam-flow-manual {
+      padding: 12px 14px; font-size: 12px; color: var(--gray-600);
+      border-right: 1px solid var(--gray-100); line-height: 1.6;
+    }
+    .sam-flow-sam {
+      padding: 12px 14px; font-size: 12px; color: #0369a1;
+      background: #f0f9ff; line-height: 1.6;
+    }
+    .sam-flow-header .sam-flow-phase,
+    .sam-flow-header .sam-flow-manual,
+    .sam-flow-header .sam-flow-sam {
+      background: var(--gray-800); color: #fff; font-size: 11px; font-weight: 700;
+      letter-spacing: .04em;
+    }
+    .sam-flow-header .sam-flow-sam { background: #0c4a6e; }
+    .highlight-sam { background: #dbeafe; color: #1d4ed8; font-weight: 700; padding: 1px 6px; border-radius: 4px; font-size: 11px; }
+
     /* ===== PRINT ===== */
     @media print {
       .cover, .phase-head { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -1018,6 +1092,243 @@
       </tbody>
     </table>
     <p class="cost-note">※ 上記は概算です。実際の工数・要件定義の結果によって変動します。まずはスタンダードで受注し、安定稼働後に追加提案するステップアップ型が効果的です。</p>
+  </div>
+
+  <!-- AWS SAM -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">9</div>
+      <div class="section-title">AWS SAM による環境構築の効率化</div>
+    </div>
+
+    <div class="summary-box">
+      <strong>AWS SAM（Serverless Application Model）</strong>とは、AWSのサーバーレス構成を「YAMLファイル」として管理し、コマンド1回で環境を再現するフレームワークです。<br>
+      マニュアルで構築しながら並行してSAMファイルを育てることで、<strong>フェーズ4（本番環境移行）の作業を大幅に削減</strong>できます。SAM自体の費用は<strong>無料</strong>です。
+    </div>
+
+    <!-- マニュアル vs SAM -->
+    <div style="font-size:13px;font-weight:700;color:var(--gray-800);margin-bottom:10px">マニュアル構築 vs AWS SAM の比較</div>
+    <div class="approach-compare">
+      <div class="approach-card">
+        <div class="approach-head approach-manual">
+          <span>📋</span> マニュアル構築（現在の方法）
+        </div>
+        <div class="approach-body">
+          <div class="approach-items">
+            <div class="approach-item"><span class="approach-item-icon">✅</span><div>AWSコンソールを操作して1リソースずつ作成</div></div>
+            <div class="approach-item"><span class="approach-item-icon">✅</span><div>初心者でも画面を見ながら進められる</div></div>
+            <div class="approach-item"><span class="approach-item-icon">✅</span><div>何をしているか視覚的にわかりやすい</div></div>
+            <div class="approach-item"><span class="approach-item-icon">⚠️</span><div>本番移行時に同じ作業を再度実施する必要がある</div></div>
+            <div class="approach-item"><span class="approach-item-icon">⚠️</span><div>2件目以降のクライアントでも毎回手作業が発生</div></div>
+            <div class="approach-item"><span class="approach-item-icon">⚠️</span><div>設定ミスや抜け漏れが起きやすい</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="approach-card">
+        <div class="approach-head approach-sam">
+          <span>⚡</span> AWS SAM（並行導入）
+        </div>
+        <div class="approach-body">
+          <div class="approach-items">
+            <div class="approach-item"><span class="approach-item-icon">✅</span><div>YAMLファイルに構成を書くと自動でリソース作成</div></div>
+            <div class="approach-item"><span class="approach-item-icon">✅</span><div><code>sam deploy</code> 1コマンドで本番環境を再現</div></div>
+            <div class="approach-item"><span class="approach-item-icon">✅</span><div>2件目以降は設定値を変えるだけで使い回せる</div></div>
+            <div class="approach-item"><span class="approach-item-icon">✅</span><div>GitでYAMLを管理 → 変更履歴が残る</div></div>
+            <div class="approach-item"><span class="approach-item-icon">✅</span><div>SAM自体の利用料金は無料</div></div>
+            <div class="approach-item"><span class="approach-item-icon">⚠️</span><div>最初のYAML作成に学習コストあり（初回のみ）</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 並行進行フロー -->
+    <div style="font-size:13px;font-weight:700;color:var(--gray-800);margin-bottom:10px">推奨：マニュアルと並行してSAMを育てる進め方</div>
+    <div class="sam-flow">
+      <div class="sam-flow-row sam-flow-header">
+        <div class="sam-flow-phase">フェーズ</div>
+        <div class="sam-flow-manual">マニュアル作業（コンソール）</div>
+        <div class="sam-flow-sam">SAM並行作業（template.yaml）</div>
+      </div>
+      <div class="sam-flow-row">
+        <div class="sam-flow-phase">フェーズ2<br><span style="font-weight:400;color:var(--gray-400);font-size:11px">開発環境構築</span></div>
+        <div class="sam-flow-manual">S3・DynamoDB・Lambda・Cognito をコンソールで1つずつ作成。動作確認しながら進める。</div>
+        <div class="sam-flow-sam">コンソールで作ったリソースを確認しながら、同じ内容を <strong>template.yaml</strong> に転記していく。この段階ではSAMを実際にデプロイしなくてOK。</div>
+      </div>
+      <div class="sam-flow-row">
+        <div class="sam-flow-phase">フェーズ3<br><span style="font-weight:400;color:var(--gray-400);font-size:11px">テスト完了後</span></div>
+        <div class="sam-flow-manual">全機能の動作確認。問題があれば修正。</div>
+        <div class="sam-flow-sam"><span class="highlight-sam">検証デプロイ</span> — <code>sam deploy --config-env dev</code> を実行し、YAMLだけで同じ構成が再現できるか確認。失敗した場合はYAMLを修正。</div>
+      </div>
+      <div class="sam-flow-row">
+        <div class="sam-flow-phase">フェーズ4<br><span style="font-weight:400;color:var(--gray-400);font-size:11px">本番環境構築</span></div>
+        <div class="sam-flow-manual">（SAM導入済みなら不要）</div>
+        <div class="sam-flow-sam"><span class="highlight-sam">本番デプロイ</span> — クライアントのAWSに切り替えて <code>sam deploy --config-env prod</code> を実行。<strong>フェーズ2の16タスクがコマンド1回に集約される。</strong></div>
+      </div>
+      <div class="sam-flow-row">
+        <div class="sam-flow-phase">2件目以降</div>
+        <div class="sam-flow-manual">フェーズ2・4の作業を最初から繰り返す</div>
+        <div class="sam-flow-sam">samconfig.toml にクライアント名を追記して <code>sam deploy</code> するだけ。<strong>移行作業が30分以内に完了。</strong></div>
+      </div>
+    </div>
+
+    <!-- フォルダ構成 -->
+    <div style="font-size:13px;font-weight:700;color:var(--gray-800);margin-bottom:6px">フォルダ構成（このシステムの場合）</div>
+    <div class="code-label">ディレクトリ構造</div>
+    <div class="code-block"><span class="cv">invoice-mock/</span>
+├── <span class="cs">v2/</span>                        ← フロントエンド（今あるもの）
+├── <span class="cs">backend/</span>                   ← SAM管理ディレクトリ（新規作成）
+│   ├── <span class="ck">template.yaml</span>          ← 全AWSリソースの定義
+│   ├── <span class="ck">samconfig.toml</span>         ← 環境ごとのデプロイ設定
+│   └── <span class="cs">functions/</span>
+│       ├── <span class="cs">ocr_trigger/</span>
+│       │   └── <span class="cv">app.py</span>           ← S3検知 → Textract起動
+│       ├── <span class="cs">approval_handler/</span>
+│       │   └── <span class="cv">app.py</span>           ← 承認・差し戻し処理
+│       └── <span class="cs">notify_sender/</span>
+│           └── <span class="cv">app.py</span>           ← Slack/メール通知
+└── workflow.html</div>
+
+    <!-- template.yaml サンプル -->
+    <div style="font-size:13px;font-weight:700;color:var(--gray-800);margin-bottom:6px">template.yaml サンプル（このシステム向け）</div>
+    <div class="code-label">backend/template.yaml</div>
+    <div class="code-block"><span class="ck">AWSTemplateFormatVersion:</span> <span class="cv">'2010-09-09'</span>
+<span class="ck">Transform:</span> <span class="cv">AWS::Serverless-2016-10-31</span>
+
+<span class="ck">Parameters:</span>
+  <span class="cc">Env:</span>
+    <span class="ck">Type:</span> String        <span class="cm"># "dev" or "prod"</span>
+  <span class="cc">ClientName:</span>
+    <span class="ck">Type:</span> String        <span class="cm"># "dev" or "clientA" など</span>
+
+<span class="ck">Resources:</span>
+
+  <span class="cm"># ── S3 バケット ──────────────────────────</span>
+  <span class="cc">InvoiceUploadBucket:</span>
+    <span class="ck">Type:</span> AWS::S3::Bucket
+    <span class="ck">Properties:</span>
+      <span class="ck">BucketName:</span> <span class="cv">!Sub</span> invoice-<span class="cv">${ClientName}</span>-uploads
+
+  <span class="cm"># ── DynamoDB テーブル ────────────────────</span>
+  <span class="cc">InvoicesTable:</span>
+    <span class="ck">Type:</span> AWS::DynamoDB::Table
+    <span class="ck">Properties:</span>
+      <span class="ck">TableName:</span> <span class="cv">!Sub</span> Invoices-<span class="cv">${ClientName}</span>
+      <span class="ck">BillingMode:</span> PAY_PER_REQUEST
+      <span class="ck">AttributeDefinitions:</span>
+        - <span class="ck">AttributeName:</span> invoiceId
+          <span class="ck">AttributeType:</span> S
+      <span class="ck">KeySchema:</span>
+        - <span class="ck">AttributeName:</span> invoiceId
+          <span class="ck">KeyType:</span> HASH
+
+  <span class="cc">ApprovalLogsTable:</span>
+    <span class="ck">Type:</span> AWS::DynamoDB::Table
+    <span class="ck">Properties:</span>
+      <span class="ck">TableName:</span> <span class="cv">!Sub</span> ApprovalLogs-<span class="cv">${ClientName}</span>
+      <span class="ck">BillingMode:</span> PAY_PER_REQUEST
+      <span class="ck">AttributeDefinitions:</span>
+        - <span class="ck">AttributeName:</span> logId
+          <span class="ck">AttributeType:</span> S
+      <span class="ck">KeySchema:</span>
+        - <span class="ck">AttributeName:</span> logId
+          <span class="ck">KeyType:</span> HASH
+
+  <span class="cm"># ── Lambda 関数 ──────────────────────────</span>
+  <span class="cc">OcrTriggerFunction:</span>
+    <span class="ck">Type:</span> AWS::Serverless::Function
+    <span class="ck">Properties:</span>
+      <span class="ck">FunctionName:</span> <span class="cv">!Sub</span> ocr-trigger-<span class="cv">${ClientName}</span>
+      <span class="ck">CodeUri:</span> functions/ocr_trigger/
+      <span class="ck">Handler:</span> app.handler
+      <span class="ck">Runtime:</span> python3.12
+      <span class="ck">Environment:</span>
+        <span class="ck">Variables:</span>
+          <span class="ck">TABLE_NAME:</span> <span class="cv">!Ref</span> InvoicesTable
+      <span class="ck">Events:</span>
+        <span class="cc">S3Upload:</span>
+          <span class="ck">Type:</span> S3
+          <span class="ck">Properties:</span>
+            <span class="ck">Bucket:</span> <span class="cv">!Ref</span> InvoiceUploadBucket
+            <span class="ck">Events:</span> s3:ObjectCreated:*
+
+  <span class="cc">ApprovalHandlerFunction:</span>
+    <span class="ck">Type:</span> AWS::Serverless::Function
+    <span class="ck">Properties:</span>
+      <span class="ck">FunctionName:</span> <span class="cv">!Sub</span> approval-handler-<span class="cv">${ClientName}</span>
+      <span class="ck">CodeUri:</span> functions/approval_handler/
+      <span class="ck">Handler:</span> app.handler
+      <span class="ck">Runtime:</span> python3.12
+      <span class="ck">Events:</span>
+        <span class="cc">ApprovalApi:</span>
+          <span class="ck">Type:</span> Api
+          <span class="ck">Properties:</span>
+            <span class="ck">Path:</span> /approval
+            <span class="ck">Method:</span> post</div>
+
+    <!-- samconfig.toml -->
+    <div style="font-size:13px;font-weight:700;color:var(--gray-800);margin-bottom:6px">環境設定ファイル（デプロイ先の切り替え）</div>
+    <div class="code-label">backend/samconfig.toml</div>
+    <div class="code-block"><span class="cm"># 自分の開発環境</span>
+<span class="cv">[dev.deploy.parameters]</span>
+<span class="ck">stack_name</span>   = <span class="cs">"invoice-dev"</span>
+<span class="ck">region</span>       = <span class="cs">"ap-northeast-1"</span>
+<span class="ck">capabilities</span> = <span class="cs">"CAPABILITY_IAM"</span>
+<span class="ck">parameter_overrides</span> = <span class="cs">"Env=dev ClientName=dev"</span>
+
+<span class="cm"># クライアントA の本番環境</span>
+<span class="cv">[clientA.deploy.parameters]</span>
+<span class="ck">stack_name</span>   = <span class="cs">"invoice-clientA"</span>
+<span class="ck">region</span>       = <span class="cs">"ap-northeast-1"</span>
+<span class="ck">capabilities</span> = <span class="cs">"CAPABILITY_IAM"</span>
+<span class="ck">parameter_overrides</span> = <span class="cs">"Env=prod ClientName=clientA"</span>
+
+<span class="cm"># クライアントB の本番環境（2件目以降はここを追記するだけ）</span>
+<span class="cv">[clientB.deploy.parameters]</span>
+<span class="ck">stack_name</span>   = <span class="cs">"invoice-clientB"</span>
+<span class="ck">region</span>       = <span class="cs">"ap-northeast-1"</span>
+<span class="ck">capabilities</span> = <span class="cs">"CAPABILITY_IAM"</span>
+<span class="ck">parameter_overrides</span> = <span class="cs">"Env=prod ClientName=clientB"</span></div>
+
+    <!-- デプロイコマンド -->
+    <div style="font-size:13px;font-weight:700;color:var(--gray-800);margin-bottom:6px">デプロイコマンド</div>
+    <div class="code-label">ターミナル（backend/ ディレクトリで実行）</div>
+    <div class="code-block"><span class="cm"># 初回セットアップ（SAMのインストール）</span>
+<span class="cv">pip install aws-sam-cli</span>
+
+<span class="cm"># 開発環境にデプロイ（フェーズ3の検証）</span>
+<span class="cv">sam deploy --config-env dev</span>
+
+<span class="cm"># クライアントAの本番環境にデプロイ（フェーズ4）</span>
+<span class="cm"># ※事前にクライアントのAWSアカウントに切り替えておく</span>
+<span class="cv">sam deploy --config-env clientA</span>
+
+<span class="cm"># スタックの削除（開発環境をクリーンアップしたいとき）</span>
+<span class="cv">sam delete --config-env dev</span></div>
+
+    <!-- 費用・注意点 -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+      <div style="background:var(--green-bg);border:1px solid #a7f3d0;border-radius:var(--radius);padding:14px 16px;">
+        <div style="font-size:12px;font-weight:700;color:#064e3b;margin-bottom:8px">💰 費用面</div>
+        <div style="font-size:12px;color:#065f46;line-height:1.8">
+          AWS SAM 自体の利用料金：<strong>無料</strong><br>
+          SAMがデプロイするAWSリソース（S3・Lambda等）は通常通り課金されますが、<strong>SAMを使うことで料金が増えることはありません。</strong><br>
+          むしろ不要なリソースが自動管理されるため、作り忘れ・削除し忘れによるコスト漏れが減ります。
+        </div>
+      </div>
+      <div style="background:var(--yellow-bg);border:1px solid #fde68a;border-radius:var(--radius);padding:14px 16px;">
+        <div style="font-size:12px;font-weight:700;color:#78350f;margin-bottom:8px">⚠️ 注意点（手動補完が必要な箇所）</div>
+        <div style="font-size:12px;color:#92400e;line-height:1.8">
+          <strong>Cognito の細部設定</strong>はSAMで定義できない項目があり、コンソールでの手動設定が残ります（メール文面・MFA詳細設定など）。<br>
+          エラーが出た場合はエラーメッセージをそのままコピーして確認すれば原因が判明します。<br>
+          <strong>初回のみ詰まる可能性</strong>がありますが、2回目以降は自走できます。
+        </div>
+      </div>
+    </div>
+
+    <div style="background:var(--sky-light);border:1px solid #bae6fd;border-radius:var(--radius);padding:12px 16px;font-size:12px;color:#0c4a6e;line-height:1.8">
+      <strong>推奨の進め方：</strong>フェーズ2でマニュアル構築しながら template.yaml に転記 → フェーズ3完了後に <code>sam deploy --config-env dev</code> で検証 → 成功したらフェーズ4は SAM のみで完結。<br>
+      マニュアルが正として手を動かしながらSAMを育てるため、失敗しても本番に影響しません。
+    </div>
   </div>
 
 </div>
