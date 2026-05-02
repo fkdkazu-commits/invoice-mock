@@ -232,6 +232,61 @@
     .chip-sky { background: var(--sky-light); color: var(--sky-dark); }
     .chip-green { background: var(--green-bg); color: #15803d; }
 
+    /* ===== EXTENSION CARDS ===== */
+    .ext-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+    @media (max-width: 700px) { .ext-grid { grid-template-columns: 1fr; } }
+    .ext-card {
+      border: 1px solid var(--gray-200); border-radius: 10px;
+      overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    }
+    .ext-card-head {
+      padding: 12px 16px; display: flex; align-items: center; gap: 10px;
+    }
+    .ext-card-icon {
+      width: 36px; height: 36px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0; background: rgba(255,255,255,.2);
+    }
+    .ext-card-title { font-size: 14px; font-weight: 800; color: #fff; line-height: 1.3; }
+    .ext-card-subtitle { font-size: 11px; color: rgba(255,255,255,.75); margin-top: 2px; }
+    .ext-card-body { padding: 16px; background: var(--white); }
+    .ext-flow {
+      display: flex; align-items: center; gap: 6px;
+      background: var(--gray-50); border-radius: 6px;
+      padding: 8px 12px; margin-bottom: 12px; font-size: 11px; flex-wrap: wrap;
+    }
+    .ext-flow-arrow { color: var(--gray-400); }
+    .ext-flow-new {
+      background: var(--sky-light); color: var(--sky-dark);
+      padding: 1px 7px; border-radius: 999px; font-weight: 700; font-size: 10px;
+    }
+    .ext-items { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+    .ext-item { display: flex; align-items: flex-start; gap: 8px; font-size: 12px; line-height: 1.5; }
+    .ext-item-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--gray-400); margin-top: 6px; flex-shrink: 0; }
+    .ext-footer {
+      display: flex; justify-content: space-between; align-items: center;
+      padding-top: 10px; border-top: 1px solid var(--gray-100);
+    }
+    .ext-price { font-size: 12px; font-weight: 700; color: var(--gray-800); }
+    .ext-target { font-size: 11px; color: var(--gray-400); }
+    .ext-c1 { background: linear-gradient(135deg, #1565c0, #2196f3); }
+    .ext-c2 { background: linear-gradient(135deg, #065f46, #059669); }
+    .ext-c3 { background: linear-gradient(135deg, #5b21b6, #7c3aed); }
+    .ext-c4 { background: linear-gradient(135deg, #92400e, #f59e0b); }
+    .ext-c5 { background: linear-gradient(135deg, #0f172a, #334155); }
+
+    .combo-table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+    .combo-table th {
+      background: var(--gray-800); color: var(--white);
+      padding: 10px 16px; text-align: left; font-size: 12px; font-weight: 700;
+    }
+    .combo-table th:first-child { border-radius: 8px 0 0 0; }
+    .combo-table th:last-child { border-radius: 0 8px 0 0; }
+    .combo-table td { padding: 11px 16px; border-bottom: 1px solid var(--gray-100); font-size: 13px; vertical-align: middle; }
+    .combo-table tr:last-child td { border-bottom: none; }
+    .combo-table tr:hover td { background: var(--gray-50); }
+    .combo-price { font-weight: 800; color: var(--sky-dark); white-space: nowrap; }
+
     /* ===== PRINT ===== */
     @media print {
       .cover, .phase-head { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -760,6 +815,209 @@
         </div>
       </div>
     </div>
+  </div>
+
+  <!-- 拡張機能提案 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">8</div>
+      <div class="section-title">拡張機能提案（次フェーズのオプション）</div>
+    </div>
+
+    <div class="summary-box">
+      AI-OCR + 承認ワークフローをベースに追加できる<strong>5つの大型機能モジュール</strong>です。<br>
+      それぞれ単独でデモ・提案できる規模感で、顧客の業種・課題に合わせて組み合わせられます。
+    </div>
+
+    <div class="ext-grid">
+      <!-- 提案1 -->
+      <div class="ext-card">
+        <div class="ext-card-head ext-c1">
+          <div class="ext-card-icon">💳</div>
+          <div>
+            <div class="ext-card-title">支払処理の完全自動化</div>
+            <div class="ext-card-subtitle">承認したら振込まで自動</div>
+          </div>
+        </div>
+        <div class="ext-card-body">
+          <div class="ext-flow">
+            <span>請求書受取</span><span class="ext-flow-arrow">›</span>
+            <span>OCR</span><span class="ext-flow-arrow">›</span>
+            <span>承認</span><span class="ext-flow-arrow">›</span>
+            <span class="ext-flow-new">振込データ生成</span><span class="ext-flow-arrow">›</span>
+            <span class="ext-flow-new">銀行送信</span>
+          </div>
+          <div class="ext-items">
+            <div class="ext-item"><div class="ext-item-dot"></div><div>全銀フォーマットの振込データ自動生成</div></div>
+            <div class="ext-item"><div class="ext-item-dot"></div><div>インターネットバンキングへのCSVアップロード</div></div>
+            <div class="ext-item"><div class="ext-item-dot"></div><div>振込済みフラグの自動更新</div></div>
+            <div class="ext-item"><div class="ext-item-dot"></div><div>振込完了後に取引先へメール通知</div></div>
+          </div>
+          <div class="ext-footer">
+            <div class="ext-price">＋30〜50万円</div>
+            <div class="ext-target">対象：月50件以上の支払いがある経理</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 提案2 -->
+      <div class="ext-card">
+        <div class="ext-card-head ext-c2">
+          <div class="ext-card-icon">📋</div>
+          <div>
+            <div class="ext-card-title">発注〜支払の一気通貫管理</div>
+            <div class="ext-card-subtitle">発注書・納品書・請求書を三点照合</div>
+          </div>
+        </div>
+        <div class="ext-card-body">
+          <div class="ext-flow">
+            <span class="ext-flow-new">発注書</span><span class="ext-flow-arrow">›</span>
+            <span class="ext-flow-new">納品書</span><span class="ext-flow-arrow">›</span>
+            <span>請求書</span><span class="ext-flow-arrow">›</span>
+            <span class="ext-flow-new">三点照合</span><span class="ext-flow-arrow">›</span>
+            <span>承認</span>
+          </div>
+          <div class="ext-items">
+            <div class="ext-item"><div class="ext-item-dot"></div><div>発注書の登録・管理画面</div></div>
+            <div class="ext-item"><div class="ext-item-dot"></div><div>納品書のOCR読み取り</div></div>
+            <div class="ext-item"><div class="ext-item-dot"></div><div>発注額・納品数量・請求額の一致確認</div></div>
+            <div class="ext-item"><div class="ext-item-dot"></div><div>不一致時の自動アラートと差し戻し</div></div>
+          </div>
+          <div class="ext-footer">
+            <div class="ext-price">＋60〜100万円</div>
+            <div class="ext-target">対象：製造業・卸売業・建設業</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 提案3 -->
+      <div class="ext-card">
+        <div class="ext-card-head ext-c3">
+          <div class="ext-card-icon">🔗</div>
+          <div>
+            <div class="ext-card-title">会計ソフト自動連携</div>
+            <div class="ext-card-subtitle">承認後に freee / 弥生 へ自動仕訳</div>
+          </div>
+        </div>
+        <div class="ext-card-body">
+          <div class="ext-flow">
+            <span>承認</span><span class="ext-flow-arrow">›</span>
+            <span class="ext-flow-new">仕訳自動生成</span><span class="ext-flow-arrow">›</span>
+            <span class="ext-flow-new">freee / 弥生へ送信</span>
+          </div>
+          <div class="ext-items">
+            <div class="ext-item"><div class="ext-item-dot"></div><div>勘定科目マスタ管理（取引先ごとにデフォルト設定）</div></div>
+            <div class="ext-item"><div class="ext-item-dot"></div><div>freee API / 弥生 API との OAuth 連携</div></div>
+            <div class="ext-item"><div class="ext-item-dot"></div><div>仕訳の自動生成・送信</div></div>
+            <div class="ext-item"><div class="ext-item-dot"></div><div>送信失敗時の再試行とアラート</div></div>
+          </div>
+          <div class="ext-footer">
+            <div class="ext-price">＋50〜80万円</div>
+            <div class="ext-target">対象：税理士に月次決算を依頼中の企業</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 提案4 -->
+      <div class="ext-card">
+        <div class="ext-card-head ext-c4">
+          <div class="ext-card-icon">🧾</div>
+          <div>
+            <div class="ext-card-title">経費精算との統合</div>
+            <div class="ext-card-subtitle">社員の経費申請も同じシステムで</div>
+          </div>
+        </div>
+        <div class="ext-card-body">
+          <div class="ext-flow">
+            <span class="ext-flow-new">領収書撮影</span><span class="ext-flow-arrow">›</span>
+            <span>OCR</span><span class="ext-flow-arrow">›</span>
+            <span>上長承認</span><span class="ext-flow-arrow">›</span>
+            <span class="ext-flow-new">給与合算支払</span>
+          </div>
+          <div class="ext-items">
+            <div class="ext-item"><div class="ext-item-dot"></div><div>スマホで領収書を撮影してアップロード</div></div>
+            <div class="ext-item"><div class="ext-item-dot"></div><div>OCRで金額・日付・店名を自動抽出</div></div>
+            <div class="ext-item"><div class="ext-item-dot"></div><div>既存の承認フローを流用して上長承認</div></div>
+            <div class="ext-item"><div class="ext-item-dot"></div><div>月次で給与振込と合算して支払い</div></div>
+          </div>
+          <div class="ext-footer">
+            <div class="ext-price">＋50〜70万円</div>
+            <div class="ext-target">対象：営業が多く経費精算が紙・Excelの会社</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 提案5（フルワイド） -->
+    <div class="ext-card" style="margin-bottom:20px">
+      <div class="ext-card-head ext-c5">
+        <div class="ext-card-icon">🏢</div>
+        <div>
+          <div class="ext-card-title">取引先ポータルの開設</div>
+          <div class="ext-card-subtitle">取引先が自分で請求書をアップロードする専用画面</div>
+        </div>
+      </div>
+      <div class="ext-card-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+          <div>
+            <div class="ext-flow">
+              <span class="ext-flow-new">取引先がアップロード</span><span class="ext-flow-arrow">›</span>
+              <span>自社に通知</span><span class="ext-flow-arrow">›</span>
+              <span>OCR → 承認</span>
+            </div>
+            <div class="ext-items">
+              <div class="ext-item"><div class="ext-item-dot"></div><div>取引先専用のログインURL発行</div></div>
+              <div class="ext-item"><div class="ext-item-dot"></div><div>取引先が請求書・明細を直接アップロード</div></div>
+            </div>
+          </div>
+          <div>
+            <div class="ext-items" style="margin-top:0;padding-top:0">
+              <div class="ext-item"><div class="ext-item-dot"></div><div>アップロード後に自社へ通知・自動OCR開始</div></div>
+              <div class="ext-item"><div class="ext-item-dot"></div><div>支払い状況を取引先がリアルタイムで確認</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="ext-footer">
+          <div class="ext-price">＋80〜120万円</div>
+          <div class="ext-target">対象：仕入れ先・外注先が多く請求書の受け取りが煩雑な会社</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 組み合わせ表 -->
+    <div style="font-size:13px;font-weight:700;color:var(--gray-800);margin-bottom:10px">提案パターン（組み合わせ例）</div>
+    <table class="combo-table">
+      <thead>
+        <tr>
+          <th>パターン名</th>
+          <th>組み合わせ</th>
+          <th style="text-align:right">想定金額</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="chip chip-sky">スタンダード</span></td>
+          <td>基本（AI-OCR + 承認）＋ 会計ソフト連携</td>
+          <td class="combo-price" style="text-align:right">〜150万円</td>
+        </tr>
+        <tr>
+          <td><span class="chip chip-green">製造業向け</span></td>
+          <td>基本 ＋ 三点照合 ＋ 会計ソフト連携</td>
+          <td class="combo-price" style="text-align:right">〜250万円</td>
+        </tr>
+        <tr>
+          <td><span class="chip" style="background:var(--yellow-bg);color:#92400e">経理DX完全版</span></td>
+          <td>基本 ＋ 支払自動化 ＋ 経費精算 ＋ 会計ソフト連携</td>
+          <td class="combo-price" style="text-align:right">〜350万円</td>
+        </tr>
+        <tr>
+          <td><span class="chip" style="background:var(--purple-bg);color:var(--purple)">BtoB取引特化</span></td>
+          <td>基本 ＋ 三点照合 ＋ 取引先ポータル</td>
+          <td class="combo-price" style="text-align:right">〜280万円</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="cost-note">※ 上記は概算です。実際の工数・要件定義の結果によって変動します。まずはスタンダードで受注し、安定稼働後に追加提案するステップアップ型が効果的です。</p>
   </div>
 
 </div>
