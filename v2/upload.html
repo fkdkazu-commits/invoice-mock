@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>請求書アップロード — InvoiceAI</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .file-list { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+    .file-item {
+      background: var(--white); border: 1px solid var(--gray-200);
+      border-radius: var(--radius); padding: 12px 16px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .file-icon {
+      width: 40px; height: 40px; border-radius: var(--radius);
+      background: var(--danger-bg); display: flex; align-items: center; justify-content: center;
+      color: var(--danger); flex-shrink: 0;
+    }
+    .file-icon.img { background: var(--blue-light); color: var(--blue); }
+    .file-info { flex: 1; min-width: 0; }
+    .file-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .file-size { font-size: 11px; color: var(--gray-400); margin-top: 2px; }
+    .file-progress { margin-top: 6px; }
+    .file-status {
+      font-size: 11px; font-weight: 600; flex-shrink: 0;
+      display: flex; align-items: center; gap: 5px;
+    }
+    .file-remove {
+      width: 24px; height: 24px; border: none; background: none;
+      color: var(--gray-400); cursor: pointer; border-radius: 4px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: all .15s;
+    }
+    .file-remove:hover { background: var(--danger-bg); color: var(--danger); }
+
+    .upload-rules {
+      background: var(--blue-light); border: 1px solid var(--blue-mid);
+      border-radius: var(--radius); padding: 12px 16px; margin-top: 16px;
+    }
+    .upload-rules p { font-size: 12px; color: #1e40af; line-height: 1.8; }
+  </style>
+</head>
+<body>
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>
+          <line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/>
+        </svg>
+      </div>
+      <div class="logo-text">InvoiceAI<span>請求書自動処理</span></div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-label">メニュー</div>
+      <a class="nav-item" href="dashboard.html"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg></span>ダッシュボード</a>
+      <a class="nav-item active" href="upload.html"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></span>請求書アップロード</a>
+      <a class="nav-item" href="ocr-confirm.html"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg></span>OCR結果確認<span class="nav-badge">3</span></a>
+      <a class="nav-item" href="approval.html"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span>承認フロー<span class="nav-badge">5</span></a>
+      <a class="nav-item" href="list.html"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></span>ステータス一覧</a>
+      <div class="nav-label" style="margin-top:6px">管理</div>
+      <a class="nav-item" href="settings.html"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></span>管理者設定</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-avatar">山</div>
+      <div class="user-info"><div class="user-name">山田 太郎</div><div class="user-role">経理部マネージャー</div></div>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <header class="top-header">
+      <span class="page-title">請求書アップロード</span>
+      <div class="header-right">
+        <button class="icon-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg><span class="notif-dot"></span></button>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <div style="max-width: 720px">
+        <!-- ドロップゾーン -->
+        <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
+          <div class="drop-zone-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+          </div>
+          <div class="drop-zone-title">ファイルをドラッグ＆ドロップ</div>
+          <div class="drop-zone-sub">または<br>PDF / PNG / JPG / TIFF に対応<br>最大ファイルサイズ: 20MB</div>
+          <button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); document.getElementById('file-input').click()">ファイルを選択</button>
+          <input type="file" id="file-input" multiple accept=".pdf,.png,.jpg,.jpeg,.tiff" style="display:none" onchange="handleFiles(this.files)">
+        </div>
+
+        <!-- 注意事項 -->
+        <div class="upload-rules">
+          <p>
+            ✓ &nbsp;適格請求書（インボイス）対応 &nbsp;｜&nbsp; ✓ &nbsp;手書き請求書も対応（精度は低下する場合あり）<br>
+            ✓ &nbsp;複数ファイルを一括アップロード可能 &nbsp;｜&nbsp; ✓ &nbsp;アップロード後にAI-OCRが自動処理を開始
+          </p>
+        </div>
+
+        <!-- ファイルリスト -->
+        <div id="file-list" class="file-list"></div>
+
+        <!-- アップロードボタン -->
+        <div id="upload-actions" style="display:none; margin-top:20px; display:flex; gap:10px; justify-content:flex-end">
+          <button class="btn btn-outline" onclick="clearFiles()">クリア</button>
+          <button class="btn btn-primary" id="upload-btn" onclick="startUpload()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <span id="upload-btn-text">アップロードして OCR 処理を開始</span>
+          </button>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+  let files = [];
+
+  function showToast(msg, type = '') {
+    const c = document.getElementById('toast');
+    const el = document.createElement('div');
+    el.className = 'toast-item ' + type;
+    el.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>${msg}`;
+    c.appendChild(el);
+    setTimeout(() => { el.classList.add('fade-out'); setTimeout(() => el.remove(), 300); }, 3500);
+  }
+
+  function handleDragOver(e) { e.preventDefault(); document.getElementById('drop-zone').classList.add('dragover'); }
+  function handleDragLeave(e) { document.getElementById('drop-zone').classList.remove('dragover'); }
+  function handleDrop(e) {
+    e.preventDefault();
+    document.getElementById('drop-zone').classList.remove('dragover');
+    handleFiles(e.dataTransfer.files);
+  }
+
+  function handleFiles(fileList) {
+    Array.from(fileList).forEach(file => {
+      if (files.find(f => f.name === file.name)) return;
+      files.push(file);
+    });
+    renderFiles();
+  }
+
+  function renderFiles() {
+    const list = document.getElementById('file-list');
+    const actions = document.getElementById('upload-actions');
+    list.innerHTML = '';
+    if (files.length === 0) { actions.style.display = 'none'; return; }
+    actions.style.display = 'flex';
+    files.forEach((file, i) => {
+      const isPdf = file.name.toLowerCase().endsWith('.pdf');
+      const size = file.size > 1024*1024 ? (file.size/1024/1024).toFixed(1)+'MB' : Math.round(file.size/1024)+'KB';
+      const el = document.createElement('div');
+      el.className = 'file-item'; el.id = 'file-'+i;
+      el.innerHTML = `
+        <div class="file-icon ${isPdf ? '' : 'img'}">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        </div>
+        <div class="file-info">
+          <div class="file-name">${file.name}</div>
+          <div class="file-size">${size}</div>
+          <div class="file-progress" id="prog-wrap-${i}" style="display:none">
+            <div class="progress"><div class="progress-fill" id="prog-${i}" style="width:0%"></div></div>
+          </div>
+        </div>
+        <div class="file-status" id="status-${i}" style="color:var(--gray-400)">待機中</div>
+        <button class="file-remove" onclick="removeFile(${i})"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      `;
+      list.appendChild(el);
+    });
+  }
+
+  function removeFile(i) { files.splice(i, 1); renderFiles(); }
+  function clearFiles() { files = []; renderFiles(); }
+
+  function startUpload() {
+    if (files.length === 0) return;
+    const btn = document.getElementById('upload-btn');
+    btn.disabled = true;
+    document.getElementById('upload-btn-text').textContent = '処理中...';
+
+    files.forEach((file, i) => {
+      const delay = i * 600;
+      setTimeout(() => {
+        document.getElementById('prog-wrap-'+i).style.display = 'block';
+        document.getElementById('status-'+i).innerHTML = '<span style="color:var(--blue)">アップロード中</span>';
+        animateProgress(i, 0, 100, 1200, () => {
+          document.getElementById('status-'+i).innerHTML = '<span style="color:var(--warning)">OCR処理中...</span>';
+          setTimeout(() => {
+            document.getElementById('prog-'+i).style.background = 'var(--success)';
+            document.getElementById('status-'+i).innerHTML = `<span style="color:var(--success)">✓ 完了</span>`;
+            if (i === files.length - 1) {
+              setTimeout(() => {
+                showToast(`${files.length}件のファイルをアップロードしました。OCR確認画面で結果を確認できます。`, 'success');
+                setTimeout(() => { window.location.href = 'ocr-confirm.html'; }, 1500);
+              }, 800);
+            }
+          }, 1000);
+        });
+      }, delay);
+    });
+  }
+
+  function animateProgress(i, from, to, duration, callback) {
+    const start = Date.now();
+    const tick = () => {
+      const p = Math.min((Date.now() - start) / duration, 1);
+      const val = from + (to - from) * p;
+      document.getElementById('prog-'+i).style.width = val + '%';
+      if (p < 1) requestAnimationFrame(tick);
+      else if (callback) callback();
+    };
+    requestAnimationFrame(tick);
+  }
+
+  // デモ用: ページ読み込み時にサンプルファイルを追加
+  window.addEventListener('load', () => {
+    const demoFiles = [
+      { name: 'invoice_sample_corp_20250427.pdf', size: 245760 },
+      { name: 'invoice_test_print_20250426.pdf', size: 189440 },
+    ];
+    demoFiles.forEach(f => files.push(f));
+    renderFiles();
+  });
+</script>
+</body>
+</html>

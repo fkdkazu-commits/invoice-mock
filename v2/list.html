@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ステータス一覧 — InvoiceAI</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .filter-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+    th.sortable:hover { background: var(--gray-100); }
+    th.sorted-asc::after { content: ' ↑'; }
+    th.sorted-desc::after { content: ' ↓'; }
+    .amount-cell { font-weight: 700; font-size: 13px; }
+    .row-action {
+      width: 28px; height: 28px; border: 1px solid var(--gray-200);
+      border-radius: 6px; background: var(--white);
+      display: inline-flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: all .15s; color: var(--gray-400);
+    }
+    .row-action:hover { background: var(--blue-light); color: var(--blue); border-color: var(--blue); }
+    .no-results { text-align: center; padding: 48px; color: var(--gray-400); }
+    .table-footer { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; border-top: 1px solid var(--gray-100); }
+    .table-footer-text { font-size: 12px; color: var(--gray-400); }
+  </style>
+</head>
+<body>
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg></div>
+      <div class="logo-text">InvoiceAI<span>請求書自動処理</span></div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-label">メニュー</div>
+      <a class="nav-item" href="dashboard.html"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg></span>ダッシュボード</a>
+      <a class="nav-item" href="upload.html"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></span>請求書アップロード</a>
+      <a class="nav-item" href="ocr-confirm.html"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg></span>OCR結果確認<span class="nav-badge">3</span></a>
+      <a class="nav-item" href="approval.html"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span>承認フロー<span class="nav-badge">5</span></a>
+      <a class="nav-item active" href="list.html"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></span>ステータス一覧</a>
+      <div class="nav-label" style="margin-top:6px">管理</div>
+      <a class="nav-item" href="settings.html"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></span>管理者設定</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-avatar">山</div>
+      <div class="user-info"><div class="user-name">山田 太郎</div><div class="user-role">経理部マネージャー</div></div>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <header class="top-header">
+      <span class="page-title">ステータス一覧</span>
+      <div class="header-right">
+        <button class="icon-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg><span class="notif-dot"></span></button>
+        <a href="upload.html"><button class="btn btn-primary btn-sm">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          新規追加
+        </button></a>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <!-- フィルターバー -->
+      <div class="filter-bar">
+        <div class="search-bar" style="width:280px">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          <input type="text" id="search-input" placeholder="取引先名・請求書番号で検索..." oninput="filterTable()">
+        </div>
+        <select class="form-control" id="status-filter" style="width:auto" onchange="filterTable()">
+          <option value="">すべてのステータス</option>
+          <option value="approved">承認済み</option>
+          <option value="pending">承認待ち</option>
+          <option value="processing">処理中</option>
+          <option value="rejected">差し戻し</option>
+        </select>
+        <select class="form-control" id="month-filter" style="width:auto" onchange="filterTable()">
+          <option value="">全期間</option>
+          <option value="2025-04">2025年4月</option>
+          <option value="2025-03">2025年3月</option>
+          <option value="2025-02">2025年2月</option>
+        </select>
+        <button class="btn btn-outline btn-sm" onclick="exportCSV()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          CSV出力
+        </button>
+      </div>
+
+      <div class="card">
+        <div class="table-wrap">
+          <table id="inv-table">
+            <thead>
+              <tr>
+                <th class="sortable" onclick="sortTable('num')">請求書番号</th>
+                <th class="sortable" onclick="sortTable('vendor')">取引先</th>
+                <th class="sortable" onclick="sortTable('date')">発行日</th>
+                <th class="sortable" onclick="sortTable('due')">支払期限</th>
+                <th class="sortable" onclick="sortTable('amount')">金額</th>
+                <th class="sortable" onclick="sortTable('category')">勘定科目</th>
+                <th>ステータス</th>
+                <th>担当者</th>
+                <th style="width:60px"></th>
+              </tr>
+            </thead>
+            <tbody id="table-body"></tbody>
+          </table>
+          <div id="no-results" class="no-results" style="display:none">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom:12px;opacity:.3"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            <p>該当する請求書が見つかりませんでした</p>
+          </div>
+        </div>
+        <div class="table-footer">
+          <span class="table-footer-text" id="result-count">45件中 45件を表示</span>
+          <div class="pagination" style="padding:0; border:none">
+            <button class="page-btn" disabled><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>
+            <button class="page-btn active">1</button>
+            <button class="page-btn">2</button>
+            <button class="page-btn">3</button>
+            <button class="page-btn"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+  const data = [
+    { num: 'INV-2025-0142', vendor: '株式会社サンプル商事', date: '2025/04/27', due: '2025/04/30', amount: 330000, category: '仕入高', status: 'approved', person: '田中さん', month: '2025-04' },
+    { num: 'INV-2025-0141', vendor: '株式会社サンプル商事', date: '2025/04/26', due: '2025/04/28', amount: 330000, category: '仕入高', status: 'pending', person: '田中さん', month: '2025-04' },
+    { num: 'INV-2025-0140', vendor: '山本物流サービス', date: '2025/04/25', due: '2025/05/15', amount: 154000, category: '外注費', status: 'approved', person: '田中さん', month: '2025-04' },
+    { num: 'INV-2025-0139', vendor: '東日本電力サービス株式会社', date: '2025/04/24', due: '2025/04/28', amount: 42350, category: '光熱費', status: 'processing', person: '田中さん', month: '2025-04' },
+    { num: 'INV-2025-0138', vendor: 'テスト印刷株式会社', date: '2025/04/24', due: '2025/05/10', amount: 88000, category: '消耗品費', status: 'pending', person: '佐藤さん', month: '2025-04' },
+    { num: 'INV-2025-0137', vendor: '山本物流サービス', date: '2025/04/23', due: '2025/05/15', amount: 154000, category: '外注費', status: 'pending', person: '田中さん', month: '2025-04' },
+    { num: 'INV-2025-0136', vendor: '株式会社IT Solutions', date: '2025/04/22', due: '2025/05/20', amount: 220000, category: '外注費', status: 'pending', person: '佐藤さん', month: '2025-04' },
+    { num: 'INV-2025-0135', vendor: 'オフィスサプライ東京', date: '2025/04/20', due: '2025/05/20', amount: 34100, category: '消耗品費', status: 'approved', person: '佐藤さん', month: '2025-04' },
+    { num: 'INV-2025-0134', vendor: '中央清掃サービス', date: '2025/04/18', due: '2025/05/18', amount: 55000, category: '外注費', status: 'approved', person: '田中さん', month: '2025-04' },
+    { num: 'INV-2025-0133', vendor: '日本通信株式会社', date: '2025/04/15', due: '2025/05/15', amount: 12980, category: '通信費', status: 'approved', person: '田中さん', month: '2025-04' },
+    { num: 'INV-2025-0132', vendor: '東京ガス株式会社', date: '2025/04/12', due: '2025/04/30', amount: 28600, category: '光熱費', status: 'approved', person: '田中さん', month: '2025-04' },
+    { num: 'INV-2025-0131', vendor: '株式会社サンプル商事', date: '2025/04/10', due: '2025/04/30', amount: 180000, category: '仕入高', status: 'rejected', person: '佐藤さん', month: '2025-04' },
+    { num: 'INV-2025-0130', vendor: '山本物流サービス', date: '2025/03/28', due: '2025/04/28', amount: 132000, category: '外注費', status: 'approved', person: '田中さん', month: '2025-03' },
+    { num: 'INV-2025-0129', vendor: 'テスト印刷株式会社', date: '2025/03/25', due: '2025/04/25', amount: 76000, category: '消耗品費', status: 'approved', person: '佐藤さん', month: '2025-03' },
+    { num: 'INV-2025-0128', vendor: '東日本電力サービス株式会社', date: '2025/03/20', due: '2025/04/20', amount: 39800, category: '光熱費', status: 'approved', person: '田中さん', month: '2025-03' },
+  ];
+
+  const statusMap = {
+    approved: '<span class="status status-approved">承認済み</span>',
+    pending:  '<span class="status status-pending">承認待ち</span>',
+    processing: '<span class="status status-processing">処理中</span>',
+    rejected: '<span class="status status-rejected">差し戻し</span>',
+  };
+
+  let sortKey = 'num'; let sortDir = -1;
+
+  function filterTable() {
+    const q = document.getElementById('search-input').value.toLowerCase();
+    const st = document.getElementById('status-filter').value;
+    const mo = document.getElementById('month-filter').value;
+    const filtered = data.filter(r =>
+      (!q || r.num.toLowerCase().includes(q) || r.vendor.toLowerCase().includes(q)) &&
+      (!st || r.status === st) &&
+      (!mo || r.month === mo)
+    );
+    renderTable(filtered);
+    document.getElementById('result-count').textContent = `45件中 ${filtered.length}件を表示`;
+  }
+
+  function sortTable(key) {
+    if (sortKey === key) sortDir *= -1;
+    else { sortKey = key; sortDir = 1; }
+    document.querySelectorAll('th').forEach(th => th.classList.remove('sorted-asc','sorted-desc'));
+    renderTable(getCurrentFiltered());
+  }
+
+  function getCurrentFiltered() {
+    const q = document.getElementById('search-input').value.toLowerCase();
+    const st = document.getElementById('status-filter').value;
+    const mo = document.getElementById('month-filter').value;
+    return data.filter(r =>
+      (!q || r.num.toLowerCase().includes(q) || r.vendor.toLowerCase().includes(q)) &&
+      (!st || r.status === st) && (!mo || r.month === mo)
+    ).sort((a,b) => {
+      const va = sortKey === 'amount' ? a[sortKey] : String(a[sortKey]);
+      const vb = sortKey === 'amount' ? b[sortKey] : String(b[sortKey]);
+      return va < vb ? -sortDir : va > vb ? sortDir : 0;
+    });
+  }
+
+  function renderTable(rows) {
+    const tbody = document.getElementById('table-body');
+    const noRes = document.getElementById('no-results');
+    if (rows.length === 0) { tbody.innerHTML = ''; noRes.style.display = 'block'; return; }
+    noRes.style.display = 'none';
+    tbody.innerHTML = rows.map(r => `
+      <tr>
+        <td><span style="font-size:12px;font-weight:600;color:var(--blue)">${r.num}</span></td>
+        <td>${r.vendor}</td>
+        <td>${r.date}</td>
+        <td style="color:${r.status==='pending'?'var(--danger)':'inherit'}">${r.due}</td>
+        <td class="amount-cell">¥${r.amount.toLocaleString()}</td>
+        <td><span class="badge badge-gray">${r.category}</span></td>
+        <td>${statusMap[r.status]||''}</td>
+        <td style="color:var(--gray-400);font-size:12px">${r.person}</td>
+        <td>
+          <button class="row-action" title="詳細" onclick="viewDetail('${r.num}')">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          </button>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  function viewDetail(num) {
+    showToast('詳細画面（本開発時に実装）', '');
+  }
+
+  function exportCSV() {
+    showToast('CSVをダウンロードしました（デモ）', 'success');
+  }
+
+  function showToast(msg, type) {
+    const c = document.getElementById('toast');
+    const el = document.createElement('div');
+    el.className = 'toast-item ' + type;
+    el.textContent = msg;
+    c.appendChild(el);
+    setTimeout(() => { el.classList.add('fade-out'); setTimeout(() => el.remove(), 300); }, 3000);
+  }
+
+  // 初期表示
+  renderTable(data);
+</script>
+</body>
+</html>

@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OCR結果確認 — InvoiceAI</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .ocr-layout { display: grid; grid-template-columns: 1fr 380px; gap: 20px; align-items: start; }
+    @media (max-width: 960px) { .ocr-layout { grid-template-columns: 1fr; } }
+
+    .pdf-preview {
+      background: var(--gray-800); border-radius: var(--radius-lg);
+      padding: 20px; min-height: 500px;
+      display: flex; flex-direction: column; gap: 12px;
+    }
+    .pdf-preview-toolbar {
+      display: flex; align-items: center; gap: 8px;
+      padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,.1);
+    }
+    .pdf-preview-toolbar span { font-size: 12px; color: rgba(255,255,255,.5); }
+    .pdf-page {
+      background: var(--white); border-radius: 4px;
+      padding: 24px; flex: 1; font-size: 12px;
+      position: relative; line-height: 1.8;
+    }
+    .pdf-company { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+    .pdf-sub { font-size: 11px; color: var(--gray-400); margin-bottom: 16px; }
+    .pdf-title { font-size: 20px; font-weight: 700; text-align: center; margin: 16px 0; color: var(--gray-800); }
+    .pdf-table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 11px; }
+    .pdf-table th { background: var(--gray-100); padding: 5px 8px; text-align: left; font-weight: 600; border: 1px solid var(--gray-200); }
+    .pdf-table td { padding: 5px 8px; border: 1px solid var(--gray-200); }
+    .pdf-total { text-align: right; font-size: 14px; font-weight: 700; margin-top: 8px; }
+
+    .highlight-box {
+      position: relative; display: inline;
+      background: rgba(37,99,235,.15); border-radius: 2px;
+      padding: 0 2px; cursor: pointer;
+      transition: background .15s;
+    }
+    .highlight-box:hover { background: rgba(37,99,235,.25); }
+    .highlight-box.warn { background: rgba(245,158,11,.2); }
+    .highlight-box.warn:hover { background: rgba(245,158,11,.35); }
+
+    .conf-field {
+      padding: 10px 0; border-bottom: 1px solid var(--gray-100);
+    }
+    .conf-field:last-child { border-bottom: none; }
+    .conf-field-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+    .conf-field-label { font-size: 11px; font-weight: 500; color: var(--gray-500); }
+    .conf-field-score { font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 999px; }
+    .conf-high { background: var(--success-bg); color: #065f46; }
+    .conf-medium { background: var(--warning-bg); color: #78350f; }
+    .conf-low { background: var(--danger-bg); color: #7f1d1d; }
+    .conf-field-val {
+      font-size: 13px; font-weight: 600; color: var(--gray-800);
+      display: flex; align-items: center; gap: 6px;
+    }
+    .conf-field-val input {
+      border: none; outline: none; background: transparent;
+      font-size: 13px; font-weight: 600; font-family: inherit;
+      color: var(--gray-800); width: 100%;
+    }
+    .conf-field-val input:focus { background: var(--blue-light); border-radius: 4px; padding: 2px 6px; }
+    .edit-btn {
+      width: 22px; height: 22px; border: 1px solid var(--gray-200);
+      border-radius: 4px; background: var(--white); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--gray-400); flex-shrink: 0; transition: all .15s;
+    }
+    .edit-btn:hover { background: var(--blue-light); color: var(--blue); border-color: var(--blue); }
+
+    .doc-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+    .doc-tab {
+      padding: 6px 14px; border-radius: var(--radius);
+      font-size: 12px; font-weight: 600; cursor: pointer;
+      background: var(--gray-100); color: var(--gray-500);
+      border: 1px solid var(--gray-200); transition: all .15s;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .doc-tab.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .doc-tab .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  </style>
+</head>
+<body>
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>
+      </div>
+      <div class="logo-text">InvoiceAI<span>請求書自動処理</span></div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-label">メニュー</div>
+      <a class="nav-item" href="dashboard.html"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg></span>ダッシュボード</a>
+      <a class="nav-item" href="upload.html"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></span>請求書アップロード</a>
+      <a class="nav-item active" href="ocr-confirm.html"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg></span>OCR結果確認<span class="nav-badge">3</span></a>
+      <a class="nav-item" href="approval.html"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span>承認フロー<span class="nav-badge">5</span></a>
+      <a class="nav-item" href="list.html"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></span>ステータス一覧</a>
+      <div class="nav-label" style="margin-top:6px">管理</div>
+      <a class="nav-item" href="settings.html"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></span>管理者設定</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-avatar">山</div>
+      <div class="user-info"><div class="user-name">山田 太郎</div><div class="user-role">経理部マネージャー</div></div>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <header class="top-header">
+      <span class="page-title">OCR結果確認</span>
+      <div class="header-right">
+        <button class="icon-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg><span class="notif-dot"></span></button>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <div class="alert alert-warning">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/></svg>
+        <span>3件のOCR結果を確認してください。<strong>黄色くハイライトされた項目</strong>は信頼度が低いため目視確認が必要です。</span>
+      </div>
+
+      <!-- ドキュメントタブ -->
+      <div class="doc-tabs">
+        <div class="doc-tab active" onclick="switchDoc(0, this)"><span class="dot"></span>サンプル商事 INV-0141</div>
+        <div class="doc-tab" onclick="switchDoc(1, this)"><span class="dot"></span>東日本電力 INV-0139</div>
+        <div class="doc-tab" onclick="switchDoc(2, this)"><span class="dot"></span>山本物流 INV-0140</div>
+      </div>
+
+      <div class="ocr-layout">
+        <!-- 左: PDF プレビュー -->
+        <div>
+          <div class="pdf-preview">
+            <div class="pdf-preview-toolbar">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <span id="doc-filename">invoice_sample_corp_20250426.pdf</span>
+              <span style="margin-left:auto">1 / 1 ページ</span>
+            </div>
+            <div class="pdf-page">
+              <div class="pdf-company">株式会社サンプル商事</div>
+              <div class="pdf-sub">〒100-0001 東京都千代田区1-1-1 ／ TEL: 03-1234-5678</div>
+              <div class="pdf-title">請 求 書</div>
+              <div style="display:flex; justify-content:space-between; font-size:11px; margin-bottom:12px">
+                <div>請求書番号: <strong class="highlight-box" id="hl-0">INV-2025-0141</strong></div>
+                <div>発行日: <strong class="highlight-box" id="hl-1">2025年4月26日</strong></div>
+              </div>
+              <div style="font-size:11px;margin-bottom:12px">
+                支払期限: <strong class="highlight-box warn" id="hl-2">2025年4月28日</strong>
+              </div>
+              <table class="pdf-table">
+                <thead><tr><th>品目</th><th>数量</th><th>単価</th><th>金額</th></tr></thead>
+                <tbody>
+                  <tr><td>業務委託費（4月分）</td><td>1</td><td>¥250,000</td><td>¥250,000</td></tr>
+                  <tr><td>交通費実費</td><td>1</td><td>¥50,000</td><td><span class="highlight-box warn" id="hl-3">¥50,000</span></td></tr>
+                </tbody>
+              </table>
+              <div style="font-size:11px; text-align:right; margin-top:8px">
+                小計: ¥300,000 ／ 消費税（10%）: ¥30,000
+              </div>
+              <div class="pdf-total">請求金額合計: ¥330,000</div>
+              <div style="margin-top:12px; font-size:10px; color:var(--gray-500)">
+                適格請求書発行事業者番号: T<strong class="highlight-box" id="hl-4">9876543210123</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 右: 抽出フィールド -->
+        <div style="display:flex; flex-direction:column; gap:16px">
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">AI抽出結果</span>
+              <span class="badge badge-green" id="overall-conf">総合信頼度 91%</span>
+            </div>
+            <div class="card-body" style="padding: 4px 20px 16px">
+
+              <div class="conf-field">
+                <div class="conf-field-header">
+                  <span class="conf-field-label">取引先名</span>
+                  <span class="conf-field-score conf-high">98%</span>
+                </div>
+                <div class="conf-field-val"><input type="text" value="株式会社サンプル商事" id="f-vendor"></div>
+                <div class="conf-bar"><div class="conf-bar-fill" id="cb-0" style="width:0%"></div></div>
+              </div>
+
+              <div class="conf-field">
+                <div class="conf-field-header">
+                  <span class="conf-field-label">請求書番号</span>
+                  <span class="conf-field-score conf-high">99%</span>
+                </div>
+                <div class="conf-field-val"><input type="text" value="INV-2025-0141" id="f-num"></div>
+                <div class="conf-bar"><div class="conf-bar-fill" id="cb-1" style="width:0%"></div></div>
+              </div>
+
+              <div class="conf-field">
+                <div class="conf-field-header">
+                  <span class="conf-field-label">発行日</span>
+                  <span class="conf-field-score conf-high">97%</span>
+                </div>
+                <div class="conf-field-val"><input type="text" value="2025年4月26日" id="f-date"></div>
+                <div class="conf-bar"><div class="conf-bar-fill" id="cb-2" style="width:0%"></div></div>
+              </div>
+
+              <div class="conf-field">
+                <div class="conf-field-header">
+                  <span class="conf-field-label">支払期限 ⚠</span>
+                  <span class="conf-field-score conf-medium">72%</span>
+                </div>
+                <div class="conf-field-val" style="background:var(--warning-bg); border-radius:5px; padding:4px 8px">
+                  <input type="text" value="2025年4月28日" id="f-due" style="background:transparent">
+                  <button class="edit-btn" onclick="document.getElementById('f-due').focus()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+                </div>
+                <div class="conf-bar"><div class="conf-bar-fill medium" id="cb-3" style="width:0%"></div></div>
+                <div style="font-size:10px; color:var(--warning); margin-top:4px">手書き文字のため要確認</div>
+              </div>
+
+              <div class="conf-field">
+                <div class="conf-field-header">
+                  <span class="conf-field-label">請求金額（税込）</span>
+                  <span class="conf-field-score conf-high">96%</span>
+                </div>
+                <div class="conf-field-val"><input type="text" value="¥330,000" id="f-amount"></div>
+                <div class="conf-bar"><div class="conf-bar-fill" id="cb-4" style="width:0%"></div></div>
+              </div>
+
+              <div class="conf-field">
+                <div class="conf-field-header">
+                  <span class="conf-field-label">適格請求書番号</span>
+                  <span class="conf-field-score conf-high">95%</span>
+                </div>
+                <div class="conf-field-val"><input type="text" value="T9876543210123" id="f-inv"></div>
+                <div class="conf-bar"><div class="conf-bar-fill" id="cb-5" style="width:0%"></div></div>
+              </div>
+
+            </div>
+          </div>
+
+          <div style="display:flex; gap:8px">
+            <button class="btn btn-outline flex-1" onclick="reject()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              再処理
+            </button>
+            <button class="btn btn-primary" style="flex:2" onclick="confirmOcr()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              確認完了・承認へ進む
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+  const docs = [
+    { filename: 'invoice_sample_corp_20250426.pdf', vendor: '株式会社サンプル商事', num: 'INV-2025-0141', date: '2025年4月26日', due: '2025年4月28日', amount: '¥330,000', inv: 'T9876543210123', conf: [98, 99, 97, 72, 96, 95], overall: '91%', overallClass: 'badge-green' },
+    { filename: 'invoice_tohoku_power_20250425.pdf', vendor: '東日本電力サービス株式会社', num: 'INV-2025-0139', date: '2025年4月25日', due: '2025年4月30日', amount: '¥42,350', inv: 'T1234567890123', conf: [99, 99, 98, 98, 99, 97], overall: '98%', overallClass: 'badge-green' },
+    { filename: 'invoice_yamamoto_logistics_20250425.pdf', vendor: '山本物流サービス', num: 'INV-2025-0140', date: '2025年4月25日', due: '2025年5月15日', amount: '¥154,000', inv: 'T5566778899001', conf: [95, 97, 93, 91, 94, 92], overall: '94%', overallClass: 'badge-green' },
+  ];
+
+  function switchDoc(i, tab) {
+    document.querySelectorAll('.doc-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    const d = docs[i];
+    document.getElementById('doc-filename').textContent = d.filename;
+    document.getElementById('f-vendor').value = d.vendor;
+    document.getElementById('f-num').value = d.num;
+    document.getElementById('f-date').value = d.date;
+    document.getElementById('f-due').value = d.due;
+    document.getElementById('f-amount').value = d.amount;
+    document.getElementById('f-inv').value = d.inv;
+    const el = document.getElementById('overall-conf');
+    el.textContent = '総合信頼度 ' + d.overall;
+    el.className = 'badge ' + d.overallClass;
+    animateBars(d.conf);
+  }
+
+  function animateBars(confs) {
+    const fills = document.querySelectorAll('.conf-bar-fill');
+    fills.forEach((el, i) => {
+      el.style.width = '0%';
+      setTimeout(() => { el.style.width = (confs[i] || 0) + '%'; }, 100 + i * 80);
+    });
+  }
+
+  function confirmOcr() {
+    showToast('OCR確認完了。承認フローへ送付しました。', 'success');
+    setTimeout(() => { window.location.href = 'approval.html'; }, 1500);
+  }
+
+  function reject() {
+    showToast('再処理キューに追加しました。', '');
+  }
+
+  function showToast(msg, type) {
+    const c = document.getElementById('toast');
+    const el = document.createElement('div');
+    el.className = 'toast-item ' + type;
+    el.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>${msg}`;
+    c.appendChild(el);
+    setTimeout(() => { el.classList.add('fade-out'); setTimeout(() => el.remove(), 300); }, 3500);
+  }
+
+  // 初期アニメーション
+  window.addEventListener('load', () => {
+    animateBars(docs[0].conf);
+  });
+</script>
+</body>
+</html>

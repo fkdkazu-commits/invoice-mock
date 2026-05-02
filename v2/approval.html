@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>承認フロー — InvoiceAI</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .approval-layout { display: grid; grid-template-columns: 1fr 360px; gap: 20px; align-items: start; }
+    @media (max-width: 960px) { .approval-layout { grid-template-columns: 1fr; } }
+
+    .inv-card {
+      background: var(--white); border: 1px solid var(--gray-200);
+      border-radius: var(--radius-lg); padding: 14px 16px;
+      cursor: pointer; transition: all .15s;
+      display: flex; align-items: flex-start; gap: 12px;
+      margin-bottom: 8px;
+    }
+    .inv-card:hover { border-color: var(--blue); box-shadow: var(--shadow-md); }
+    .inv-card.selected { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,.1); }
+    .inv-card.urgent { border-left: 3px solid var(--danger); }
+    .inv-card-icon {
+      width: 40px; height: 40px; border-radius: var(--radius);
+      background: var(--blue-light); display: flex; align-items: center; justify-content: center;
+      color: var(--blue); flex-shrink: 0;
+    }
+    .inv-card-body { flex: 1; min-width: 0; }
+    .inv-card-name { font-size: 13px; font-weight: 700; margin-bottom: 3px; }
+    .inv-card-meta { font-size: 11px; color: var(--gray-400); line-height: 1.6; }
+    .inv-card-deadline { font-size: 10px; color: var(--danger); font-weight: 700; margin-top: 3px; }
+    .inv-card-right { text-align: right; flex-shrink: 0; }
+    .inv-card-amount { font-size: 14px; font-weight: 800; }
+
+    .detail-row { display: flex; padding: 9px 0; border-bottom: 1px solid var(--gray-100); font-size: 13px; }
+    .detail-row:last-child { border-bottom: none; }
+    .detail-key { color: var(--gray-500); width: 110px; flex-shrink: 0; font-size: 12px; }
+    .detail-val { flex: 1; font-weight: 600; }
+
+    .section-label {
+      font-size: 11px; font-weight: 700;
+      color: var(--gray-500); text-transform: uppercase;
+      letter-spacing: .05em; margin: 12px 0 6px;
+    }
+    .section-label.urgent-label { color: var(--danger); }
+
+    .reason-textarea {
+      width: 100%; padding: 9px 12px;
+      border: 1px solid var(--gray-200); border-radius: var(--radius);
+      font-size: 13px; font-family: inherit; resize: vertical; min-height: 70px;
+      outline: none; transition: all .15s;
+    }
+    .reason-textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,.1); }
+
+    .count-badge {
+      background: var(--danger); color: #fff;
+      font-size: 11px; font-weight: 700;
+      padding: 2px 8px; border-radius: 999px; margin-left: 6px;
+      transition: all .3s;
+    }
+  </style>
+</head>
+<body>
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg></div>
+      <div class="logo-text">InvoiceAI<span>請求書自動処理</span></div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-label">メニュー</div>
+      <a class="nav-item" href="dashboard.html"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg></span>ダッシュボード</a>
+      <a class="nav-item" href="upload.html"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></span>請求書アップロード</a>
+      <a class="nav-item" href="ocr-confirm.html"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg></span>OCR結果確認<span class="nav-badge">3</span></a>
+      <a class="nav-item active" href="approval.html"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span>承認フロー<span class="nav-badge" id="sidebar-badge">5</span></a>
+      <a class="nav-item" href="list.html"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></span>ステータス一覧</a>
+      <div class="nav-label" style="margin-top:6px">管理</div>
+      <a class="nav-item" href="settings.html"><span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></span>管理者設定</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-avatar">鈴</div>
+      <div class="user-info"><div class="user-name">鈴木 部長</div><div class="user-role">承認権限あり</div></div>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <header class="top-header">
+      <span class="page-title">承認フロー</span>
+      <div class="header-right">
+        <button class="icon-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg><span class="notif-dot"></span></button>
+        <button class="btn btn-outline btn-sm" onclick="bulkApprove()">一括承認</button>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <div class="tabs">
+        <div class="tab active">承認待ち <span class="tab-count" id="tab-count">5</span></div>
+        <div class="tab">承認済み <span class="tab-count">38</span></div>
+        <div class="tab">差し戻し <span class="tab-count">2</span></div>
+        <div class="tab">全て <span class="tab-count">45</span></div>
+      </div>
+
+      <div class="approval-layout">
+        <!-- 左リスト -->
+        <div id="inv-list">
+          <div class="section-label urgent-label">⚠ 期日24時間以内</div>
+
+          <div class="inv-card urgent selected" id="card-0" onclick="selectCard(0)">
+            <div class="inv-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+            <div class="inv-card-body">
+              <div class="inv-card-name">株式会社サンプル商事</div>
+              <div class="inv-card-meta">INV-2025-0141 ・ 仕入高 ・ 適格✓<br>申請者：田中さん ・ 4月26日提出</div>
+              <div class="inv-card-deadline">⏰ 明日 17:00 期限</div>
+            </div>
+            <div class="inv-card-right">
+              <div class="inv-card-amount">¥330,000</div>
+              <span class="status status-pending" style="margin-top:5px;display:inline-flex">待ち</span>
+            </div>
+          </div>
+
+          <div class="inv-card urgent" id="card-1" onclick="selectCard(1)">
+            <div class="inv-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+            <div class="inv-card-body">
+              <div class="inv-card-name">東日本電力サービス株式会社</div>
+              <div class="inv-card-meta">INV-2025-0139 ・ 光熱費 ・ 適格✓<br>申請者：田中さん ・ 4月25日提出</div>
+              <div class="inv-card-deadline">⏰ 本日 18:00 期限</div>
+            </div>
+            <div class="inv-card-right">
+              <div class="inv-card-amount">¥42,350</div>
+              <span class="status status-pending" style="margin-top:5px;display:inline-flex">待ち</span>
+            </div>
+          </div>
+
+          <div class="section-label" style="margin-top:12px">通常</div>
+
+          <div class="inv-card" id="card-2" onclick="selectCard(2)">
+            <div class="inv-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+            <div class="inv-card-body">
+              <div class="inv-card-name">テスト印刷株式会社</div>
+              <div class="inv-card-meta">INV-2025-0138 ・ 消耗品費 ・ 適格✓<br>申請者：佐藤さん ・ 4月24日提出</div>
+            </div>
+            <div class="inv-card-right">
+              <div class="inv-card-amount">¥88,000</div>
+              <span class="status status-pending" style="margin-top:5px;display:inline-flex">待ち</span>
+            </div>
+          </div>
+
+          <div class="inv-card" id="card-3" onclick="selectCard(3)">
+            <div class="inv-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+            <div class="inv-card-body">
+              <div class="inv-card-name">山本物流サービス</div>
+              <div class="inv-card-meta">INV-2025-0137 ・ 外注費 ・ 適格✓<br>申請者：田中さん ・ 4月23日提出</div>
+            </div>
+            <div class="inv-card-right">
+              <div class="inv-card-amount">¥154,000</div>
+              <span class="status status-pending" style="margin-top:5px;display:inline-flex">待ち</span>
+            </div>
+          </div>
+
+          <div class="inv-card" id="card-4" onclick="selectCard(4)">
+            <div class="inv-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+            <div class="inv-card-body">
+              <div class="inv-card-name">株式会社IT Solutions</div>
+              <div class="inv-card-meta">INV-2025-0136 ・ 外注費 ・ 適格✓<br>申請者：佐藤さん ・ 4月22日提出</div>
+            </div>
+            <div class="inv-card-right">
+              <div class="inv-card-amount">¥220,000</div>
+              <span class="status status-pending" style="margin-top:5px;display:inline-flex">待ち</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 右: 詳細 -->
+        <div>
+          <div class="card mb-16">
+            <div class="card-header">
+              <span class="card-title">請求書詳細</span>
+              <span class="badge badge-red" id="detail-urgency">期日間近</span>
+            </div>
+            <div class="card-body" style="padding:0">
+              <div style="padding:12px 20px">
+                <div class="detail-row"><div class="detail-key">取引先</div><div class="detail-val" id="d-vendor">株式会社サンプル商事</div></div>
+                <div class="detail-row"><div class="detail-key">請求書番号</div><div class="detail-val" id="d-num">INV-2025-0141</div></div>
+                <div class="detail-row"><div class="detail-key">発行日</div><div class="detail-val" id="d-date">2025年4月26日</div></div>
+                <div class="detail-row"><div class="detail-key">支払期限</div><div class="detail-val" id="d-due" style="color:var(--danger);font-weight:700">2025年4月28日</div></div>
+                <div class="detail-row"><div class="detail-key">請求金額</div><div class="detail-val" id="d-amount" style="font-size:15px;font-weight:800;color:var(--navy)">¥330,000</div></div>
+                <div class="detail-row"><div class="detail-key">勘定科目</div><div class="detail-val" id="d-category">仕入高</div></div>
+                <div class="detail-row"><div class="detail-key">適格請求書</div><div class="detail-val"><span style="color:var(--success);font-weight:700">✓ 適格（T9876543210123）</span></div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card mb-16">
+            <div class="card-header"><span class="card-title">承認フロー</span></div>
+            <div class="card-body">
+              <div class="flow-steps">
+                <div class="flow-step">
+                  <div class="flow-connector"><div class="flow-dot done"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div><div class="flow-line done"></div></div>
+                  <div class="flow-content"><div class="flow-name">OCR確認</div><div class="flow-meta">田中さん ・ 4/26 14:32 完了</div></div>
+                </div>
+                <div class="flow-step">
+                  <div class="flow-connector"><div class="flow-dot active"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></div><div class="flow-line"></div></div>
+                  <div class="flow-content"><div class="flow-name" style="color:var(--blue)">部長承認（現在）</div><div class="flow-meta">鈴木部長 ・ 待機中</div></div>
+                </div>
+                <div class="flow-step">
+                  <div class="flow-connector"><div class="flow-dot">3</div></div>
+                  <div class="flow-content"><div class="flow-name" style="color:var(--gray-400)">経理処理・完了</div><div class="flow-meta">承認後に自動進行</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><span class="card-title">承認アクション</span></div>
+            <div class="card-body">
+              <div class="form-group">
+                <label class="form-label">コメント（任意）</label>
+                <textarea class="reason-textarea" id="comment" placeholder="承認コメントや差し戻し理由を入力..."></textarea>
+              </div>
+              <div style="display:flex; gap:8px">
+                <button class="btn btn-outline" style="flex:1" onclick="openRejectModal()">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  差し戻し
+                </button>
+                <button class="btn btn-success btn-lg" style="flex:2" onclick="openApproveModal()">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  承認する
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- 承認モーダル -->
+<div id="approve-modal" style="display:none">
+  <div class="modal-overlay" onclick="closeModal('approve-modal')">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title">請求書を承認しますか？</div>
+        </div>
+        <button class="modal-close" onclick="closeModal('approve-modal')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      </div>
+      <div class="modal-body">
+        <div style="background:var(--gray-50); border-radius:var(--radius); padding:12px 16px; margin-bottom:12px">
+          <div style="font-size:13px; font-weight:700; margin-bottom:4px" id="modal-vendor">株式会社サンプル商事</div>
+          <div style="font-size:12px; color:var(--gray-500)"><span id="modal-num">INV-2025-0141</span> ／ <span id="modal-amount" style="font-weight:700; color:var(--navy)">¥330,000</span></div>
+        </div>
+        <p style="font-size:13px; color:var(--gray-600)">この操作は取り消せません。承認後、申請者へ通知メールが自動送信されます。</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal('approve-modal')">キャンセル</button>
+        <button class="btn btn-success" onclick="doApprove()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          はい、承認します
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 差し戻しモーダル -->
+<div id="reject-modal" style="display:none">
+  <div class="modal-overlay" onclick="closeModal('reject-modal')">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title">差し戻し理由を入力</div>
+        <button class="modal-close" onclick="closeModal('reject-modal')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">差し戻し理由（必須）</label>
+          <textarea class="reason-textarea" id="reject-reason" placeholder="申請者へ伝える理由を入力してください..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal('reject-modal')">キャンセル</button>
+        <button class="btn btn-danger" onclick="doReject()">差し戻す</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+  const invoices = [
+    { vendor: '株式会社サンプル商事', num: 'INV-2025-0141', date: '2025年4月26日', due: '2025年4月28日', amount: '¥330,000', category: '仕入高', urgent: true },
+    { vendor: '東日本電力サービス株式会社', num: 'INV-2025-0139', date: '2025年4月25日', due: '2025年4月28日', amount: '¥42,350', category: '光熱費', urgent: true },
+    { vendor: 'テスト印刷株式会社', num: 'INV-2025-0138', date: '2025年4月24日', due: '2025年5月10日', amount: '¥88,000', category: '消耗品費', urgent: false },
+    { vendor: '山本物流サービス', num: 'INV-2025-0137', date: '2025年4月23日', due: '2025年5月15日', amount: '¥154,000', category: '外注費', urgent: false },
+    { vendor: '株式会社IT Solutions', num: 'INV-2025-0136', date: '2025年4月22日', due: '2025年5月20日', amount: '¥220,000', category: '外注費', urgent: false },
+  ];
+
+  let selectedIdx = 0;
+  let remaining = 5;
+
+  function selectCard(i) {
+    document.querySelectorAll('.inv-card').forEach(c => c.classList.remove('selected'));
+    const card = document.getElementById('card-'+i);
+    if (!card) return;
+    card.classList.add('selected');
+    selectedIdx = i;
+    const inv = invoices[i];
+    document.getElementById('d-vendor').textContent = inv.vendor;
+    document.getElementById('d-num').textContent = inv.num;
+    document.getElementById('d-date').textContent = inv.date;
+    document.getElementById('d-due').textContent = inv.due;
+    document.getElementById('d-due').style.color = inv.urgent ? 'var(--danger)' : 'var(--gray-800)';
+    document.getElementById('d-amount').textContent = inv.amount;
+    document.getElementById('d-category').textContent = inv.category;
+    const badge = document.getElementById('detail-urgency');
+    badge.textContent = inv.urgent ? '期日間近' : '通常';
+    badge.className = 'badge ' + (inv.urgent ? 'badge-red' : 'badge-gray');
+  }
+
+  function openApproveModal() {
+    const inv = invoices[selectedIdx];
+    document.getElementById('modal-vendor').textContent = inv.vendor;
+    document.getElementById('modal-num').textContent = inv.num;
+    document.getElementById('modal-amount').textContent = inv.amount;
+    document.getElementById('approve-modal').style.display = 'block';
+  }
+
+  function openRejectModal() {
+    document.getElementById('reject-modal').style.display = 'block';
+  }
+
+  function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+  function doApprove() {
+    const inv = invoices[selectedIdx];
+    closeModal('approve-modal');
+    const card = document.getElementById('card-'+selectedIdx);
+    card.style.transition = 'all .3s';
+    card.style.opacity = '0';
+    card.style.transform = 'translateX(20px)';
+    setTimeout(() => {
+      card.style.display = 'none';
+      remaining--;
+      document.getElementById('tab-count').textContent = remaining;
+      document.getElementById('sidebar-badge').textContent = remaining;
+      showToast('✓ ' + inv.num + ' を承認しました。通知メールを送信しました。', 'success');
+      // 次のカードを選択
+      const next = document.querySelector('.inv-card:not([style*="display: none"])');
+      if (next) {
+        const nextId = parseInt(next.id.replace('card-',''));
+        selectCard(nextId);
+        next.classList.add('selected');
+      }
+    }, 300);
+  }
+
+  function doReject() {
+    const inv = invoices[selectedIdx];
+    const reason = document.getElementById('reject-reason').value.trim();
+    if (!reason) { document.getElementById('reject-reason').focus(); return; }
+    closeModal('reject-modal');
+    const card = document.getElementById('card-'+selectedIdx);
+    card.style.transition = 'all .3s';
+    card.style.opacity = '0';
+    card.style.transform = 'translateX(20px)';
+    setTimeout(() => {
+      card.style.display = 'none';
+      remaining--;
+      document.getElementById('tab-count').textContent = remaining;
+      document.getElementById('sidebar-badge').textContent = remaining;
+      showToast(inv.num + ' を差し戻しました。', 'warning');
+    }, 300);
+  }
+
+  function bulkApprove() {
+    showToast('一括承認は確認画面で実施してください（デモ）', '');
+  }
+
+  function showToast(msg, type) {
+    const c = document.getElementById('toast');
+    const el = document.createElement('div');
+    el.className = 'toast-item ' + type;
+    el.innerHTML = msg;
+    c.appendChild(el);
+    setTimeout(() => { el.classList.add('fade-out'); setTimeout(() => el.remove(), 300); }, 4000);
+  }
+</script>
+</body>
+</html>
