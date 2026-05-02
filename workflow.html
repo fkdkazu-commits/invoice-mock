@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>モック→納品 完全フローガイド — InvoiceAI</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy:       #1a2e4a;
+      --navy-mid:   #1e3a5f;
+      --sky:        #2196f3;
+      --sky-light:  #e3f2fd;
+      --sky-dark:   #1565c0;
+      --white:      #ffffff;
+      --gray-50:    #f8fafc;
+      --gray-100:   #f1f5f9;
+      --gray-200:   #e2e8f0;
+      --gray-400:   #94a3b8;
+      --gray-600:   #475569;
+      --gray-800:   #1e293b;
+      --green:      #22c55e;
+      --green-bg:   #f0fdf4;
+      --yellow:     #f59e0b;
+      --yellow-bg:  #fffbeb;
+      --red:        #ef4444;
+      --red-bg:     #fef2f2;
+      --purple:     #7c3aed;
+      --purple-bg:  #f5f3ff;
+      --radius:     8px;
+    }
+    body {
+      font-family: 'Segoe UI', 'Hiragino Sans', 'Yu Gothic UI', sans-serif;
+      font-size: 14px;
+      color: var(--gray-800);
+      background: var(--white);
+      line-height: 1.7;
+    }
+    a { color: var(--sky); }
+
+    /* ===== COVER ===== */
+    .cover {
+      background: var(--navy);
+      color: var(--white);
+      padding: 64px 80px;
+      min-height: 280px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .cover-label { font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--sky); margin-bottom: 16px; }
+    .cover-title { font-size: 32px; font-weight: 800; line-height: 1.3; margin-bottom: 12px; }
+    .cover-sub { font-size: 15px; color: #94a3b8; margin-bottom: 28px; }
+    .cover-meta { display: flex; gap: 32px; font-size: 13px; color: #64748b; }
+    .cover-meta span { color: #cbd5e1; font-weight: 600; }
+
+    /* ===== BODY ===== */
+    .doc-body { max-width: 860px; margin: 0 auto; padding: 48px 40px 80px; }
+
+    /* ===== SECTION ===== */
+    .section { margin-bottom: 52px; }
+    .section-header {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 20px; padding-bottom: 10px;
+      border-bottom: 2px solid var(--gray-200);
+    }
+    .section-num {
+      width: 28px; height: 28px; border-radius: 6px;
+      background: var(--navy); color: var(--white);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 800; flex-shrink: 0;
+    }
+    .section-title { font-size: 18px; font-weight: 800; color: var(--gray-800); }
+
+    /* ===== SUMMARY BOX ===== */
+    .summary-box {
+      background: var(--sky-light); border-left: 4px solid var(--sky);
+      border-radius: var(--radius); padding: 16px 20px;
+      margin-bottom: 24px; font-size: 13px; line-height: 1.8;
+    }
+
+    /* ===== OVERVIEW FLOW ===== */
+    .overview-flow { display: flex; align-items: stretch; gap: 0; margin-bottom: 24px; overflow-x: auto; }
+    .ov-step {
+      flex: 1; min-width: 130px;
+      border: 1px solid var(--gray-200); border-radius: 0;
+      padding: 16px 14px; text-align: center;
+      position: relative; background: var(--white);
+    }
+    .ov-step:first-child { border-radius: var(--radius) 0 0 var(--radius); }
+    .ov-step:last-child { border-radius: 0 var(--radius) var(--radius) 0; }
+    .ov-step + .ov-step { border-left: none; }
+    .ov-step::after {
+      content: '›';
+      position: absolute; right: -10px; top: 50%; transform: translateY(-50%);
+      font-size: 20px; color: var(--gray-300); z-index: 1;
+    }
+    .ov-step:last-child::after { display: none; }
+    .ov-num {
+      width: 24px; height: 24px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 800; color: #fff;
+      margin: 0 auto 8px;
+    }
+    .ov-label { font-size: 12px; font-weight: 700; margin-bottom: 4px; }
+    .ov-sub { font-size: 10px; color: var(--gray-400); line-height: 1.5; }
+
+    /* ===== PHASE BLOCK ===== */
+    .phase-block {
+      border: 1px solid var(--gray-200); border-radius: 10px;
+      overflow: hidden; margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    }
+    .phase-head {
+      padding: 14px 20px; color: var(--white);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .phase-head-left { display: flex; align-items: center; gap: 10px; }
+    .phase-head-title { font-size: 15px; font-weight: 800; }
+    .phase-tag {
+      background: rgba(255,255,255,.2); font-size: 11px; font-weight: 700;
+      padding: 2px 10px; border-radius: 999px;
+    }
+    .phase-period {
+      font-size: 11px; color: rgba(255,255,255,.7);
+      background: rgba(0,0,0,.15); padding: 3px 10px; border-radius: 999px;
+    }
+    .ph1 { background: var(--sky-dark); }
+    .ph2 { background: #059669; }
+    .ph3 { background: var(--purple); }
+    .ph4 { background: #b45309; }
+    .ph5 { background: #0f172a; }
+
+    .phase-body { padding: 20px; background: var(--white); }
+    .phase-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 700px) { .phase-cols { grid-template-columns: 1fr; } }
+
+    .task-list { display: flex; flex-direction: column; gap: 0; }
+    .task-group-label {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .06em; color: var(--gray-400);
+      padding: 10px 0 5px; margin-top: 4px;
+    }
+    .task-group-label:first-child { padding-top: 0; margin-top: 0; }
+    .task-item {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 7px 0; border-bottom: 1px solid var(--gray-100);
+      font-size: 13px; line-height: 1.5;
+    }
+    .task-item:last-child { border-bottom: none; }
+    .task-check {
+      width: 16px; height: 16px; border: 2px solid var(--gray-300);
+      border-radius: 4px; flex-shrink: 0; margin-top: 2px;
+    }
+    .task-text { flex: 1; }
+    .task-note { font-size: 11px; color: var(--gray-400); margin-top: 2px; }
+
+    /* ===== DATA LOCATION TABLE ===== */
+    .data-table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+    .data-table th {
+      background: var(--gray-800); color: var(--white);
+      padding: 10px 16px; text-align: left;
+      font-size: 12px; font-weight: 700; letter-spacing: .04em;
+    }
+    .data-table th:first-child { border-radius: 8px 0 0 0; }
+    .data-table th:last-child { border-radius: 0 8px 0 0; }
+    .data-table td { padding: 11px 16px; border-bottom: 1px solid var(--gray-100); font-size: 13px; vertical-align: top; }
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tr:hover td { background: var(--gray-50); }
+    .data-location { font-size: 12px; font-weight: 700; color: var(--sky-dark); }
+    .data-tag {
+      display: inline-flex; align-items: center;
+      padding: 1px 8px; border-radius: 999px;
+      font-size: 10px; font-weight: 700; margin-right: 4px;
+    }
+    .tag-s3 { background: #fff7ed; color: #c2410c; }
+    .tag-db { background: var(--sky-light); color: var(--sky-dark); }
+    .tag-cognito { background: var(--purple-bg); color: var(--purple); }
+    .tag-github { background: var(--gray-100); color: var(--gray-800); }
+    .tag-amplify { background: var(--green-bg); color: #15803d; }
+    .tag-local { background: var(--yellow-bg); color: #92400e; }
+
+    /* ===== DECISION BOX ===== */
+    .decision-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+    .decision-card {
+      border: 1px solid var(--gray-200); border-radius: var(--radius);
+      padding: 16px; background: var(--gray-50);
+    }
+    .decision-card-title { font-size: 13px; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+    .decision-card ul { padding-left: 16px; font-size: 12px; color: var(--gray-600); line-height: 1.9; }
+
+    /* ===== COST TABLE ===== */
+    .cost-table { width: 100%; border-collapse: collapse; }
+    .cost-table th {
+      background: var(--gray-100); padding: 10px 16px; text-align: left;
+      font-size: 12px; font-weight: 700; color: var(--gray-600);
+      border-bottom: 2px solid var(--gray-200);
+    }
+    .cost-table td { padding: 11px 16px; border-bottom: 1px solid var(--gray-100); font-size: 13px; }
+    .cost-table tr:last-child td { border-bottom: none; }
+    .cost-table .total-row td { font-weight: 800; background: var(--gray-50); font-size: 14px; }
+    .cost-note { font-size: 11px; color: var(--gray-400); margin-top: 10px; }
+
+    /* ===== STEP LIST (next steps) ===== */
+    .step-list { display: flex; flex-direction: column; gap: 10px; }
+    .step-item {
+      display: flex; gap: 14px; align-items: flex-start;
+      padding: 14px 16px; background: var(--gray-50);
+      border-radius: var(--radius); border: 1px solid var(--gray-200);
+    }
+    .step-circle {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--sky); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 800; flex-shrink: 0;
+    }
+    .step-title { font-weight: 700; margin-bottom: 3px; }
+    .step-desc { font-size: 12px; color: var(--gray-400); }
+
+    /* ===== FOOTER ===== */
+    .doc-footer {
+      background: var(--gray-100); border-top: 1px solid var(--gray-200);
+      padding: 24px 80px; font-size: 12px; color: var(--gray-400);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+
+    /* ===== CHIP ===== */
+    .chip {
+      display: inline-flex; align-items: center;
+      padding: 2px 10px; border-radius: 999px; font-size: 11px; font-weight: 700;
+    }
+    .chip-sky { background: var(--sky-light); color: var(--sky-dark); }
+    .chip-green { background: var(--green-bg); color: #15803d; }
+
+    /* ===== PRINT ===== */
+    @media print {
+      .cover, .phase-head { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+    @media (max-width: 700px) {
+      .cover { padding: 40px 24px; }
+      .doc-body { padding: 32px 20px 60px; }
+      .decision-grid, .phase-cols { grid-template-columns: 1fr; }
+      .doc-footer { flex-direction: column; gap: 8px; padding: 20px 24px; }
+      .cover-meta { flex-direction: column; gap: 8px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ===== COVER ===== -->
+<div class="cover">
+  <div class="cover-label">業務マニュアル</div>
+  <div class="cover-title">モック→納品<br>完全フローガイド</div>
+  <div class="cover-sub">ヒアリングから納品・引き渡しまで、迷わず進めるための全タスク整理</div>
+  <div class="cover-meta">
+    対象：<span>自社（受注者）</span>
+    &nbsp;&nbsp;用途：<span>業務進行・チェックリスト</span>
+    &nbsp;&nbsp;バージョン：<span>v1.0</span>
+  </div>
+</div>
+
+<!-- ===== BODY ===== -->
+<div class="doc-body">
+
+  <!-- 0. 全体概要 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">0</div>
+      <div class="section-title">全体の流れ（5フェーズ）</div>
+    </div>
+    <div class="summary-box">
+      モック画面の確認からAWS本番構築・納品まで、<strong>5つのフェーズ</strong>で進めます。<br>
+      各フェーズのタスクをチェックリストとして使い、完了したら次フェーズへ進めてください。<br>
+      「どこにデータがあるか」「何をどこで作業するか」をセットで確認できます。
+    </div>
+
+    <!-- 概要フロー -->
+    <div class="overview-flow">
+      <div class="ov-step">
+        <div class="ov-num" style="background:var(--sky-dark)">1</div>
+        <div class="ov-label">ヒアリング<br>モック確認</div>
+        <div class="ov-sub">合意形成</div>
+      </div>
+      <div class="ov-step">
+        <div class="ov-num" style="background:#059669">2</div>
+        <div class="ov-label">自分の環境<br>で開発</div>
+        <div class="ov-sub">AWS開発環境</div>
+      </div>
+      <div class="ov-step">
+        <div class="ov-num" style="background:var(--purple)">3</div>
+        <div class="ov-label">開発・<br>テスト</div>
+        <div class="ov-sub">動作確認</div>
+      </div>
+      <div class="ov-step">
+        <div class="ov-num" style="background:#b45309">4</div>
+        <div class="ov-label">クライアント<br>環境に移行</div>
+        <div class="ov-sub">本番構築</div>
+      </div>
+      <div class="ov-step">
+        <div class="ov-num" style="background:#0f172a">5</div>
+        <div class="ov-label">納品・<br>引き渡し</div>
+        <div class="ov-sub">完了</div>
+      </div>
+    </div>
+    <p style="font-size:12px;color:var(--gray-400)">※ フェーズ2〜3は自分のAWSアカウントで作業。フェーズ4でクライアント環境に同じ構成を再現します。</p>
+  </div>
+
+  <!-- フェーズ1 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <div class="section-title">フェーズ1：ヒアリング〜モック確認</div>
+    </div>
+
+    <div class="summary-box">
+      <strong>目的：</strong>何を作るかをクライアントと合意する。この段階ではAWSもコードも不要。モックのURLを見せながら画面・機能を固める。
+    </div>
+
+    <div class="phase-block">
+      <div class="phase-head ph1">
+        <div class="phase-head-left">
+          <span class="phase-head-title">Phase 1 タスクリスト</span>
+          <span class="phase-tag">ヒアリング・合意</span>
+        </div>
+        <span class="phase-period">作業場所：ブラウザ・Zoom等</span>
+      </div>
+      <div class="phase-body">
+        <div class="phase-cols">
+          <div>
+            <div class="task-group-label">ヒアリング</div>
+            <div class="task-list">
+              <div class="task-item"><div class="task-check"></div><div class="task-text">現状業務のヒアリング（どのExcel業務が非効率か）<div class="task-note">例：請求書をExcelに手入力 → 月◯件・◯人が担当</div></div></div>
+              <div class="task-item"><div class="task-check"></div><div class="task-text">業務フロー図の作成（手書き可）<div class="task-note">誰が・何を・どこに・どう渡すかを図解</div></div></div>
+              <div class="task-item"><div class="task-check"></div><div class="task-text">承認ルールの確認<div class="task-note">例：10万円以上は部長承認 / 科目ごとの分岐など</div></div></div>
+              <div class="task-item"><div class="task-check"></div><div class="task-text">通知先の確認（Slack / Teams / メールのどれか）</div></div>
+              <div class="task-item"><div class="task-check"></div><div class="task-text">必要な画面・機能の優先度確認</div></div>
+            </div>
+          </div>
+          <div>
+            <div class="task-group-label">モック確認・合意</div>
+            <div class="task-list">
+              <div class="task-item"><div class="task-check"></div><div class="task-text">invoice-mock v2 URLをクライアントに共有<div class="task-note">https://fkdkazu-commits.github.io/invoice-mock/v2/login.html</div></div></div>
+              <div class="task-item"><div class="task-check"></div><div class="task-text">画面を一緒に操作しながらフィードバックを取得</div></div>
+              <div class="task-item"><div class="task-check"></div><div class="task-text">社名・項目名・承認フロー等をモックに反映（必要な場合）</div></div>
+              <div class="task-item"><div class="task-check"></div><div class="task-text">修正版モックを再確認してもらう</div></div>
+              <div class="task-item"><div class="task-check"></div><div class="task-text">✅ モックOK の合意を取る → フェーズ2へ</div></div>
+            </div>
+          </div>
+        </div>
+        <div style="background:var(--yellow-bg);border:1px solid #fde68a;border-radius:var(--radius);padding:10px 14px;margin-top:16px;font-size:12px;color:#78350f">
+          <strong>⚠ ポイント：</strong>モック修正はこのタイミングで全部やり切る。フェーズ2以降に変更が入ると手戻りコストが大きい。
+        </div>
+      </div>
+    </div>
+
+    <div style="font-size:12px;color:var(--gray-400);margin-top:4px">
+      📂 データの場所：モックはGitHub Pages（<code>fkdkazu-commits/invoice-mock</code>）に公開済み。ヒアリングメモは手元で管理。
+    </div>
+  </div>
+
+  <!-- フェーズ2 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <div class="section-title">フェーズ2：AWS開発環境の構築（自分のアカウント）</div>
+    </div>
+
+    <div class="summary-box">
+      <strong>目的：</strong>自分のAWSアカウントに開発用の環境を作る。クライアントには一切影響なし。まずここで動く状態を作ってからクライアント環境へ移行する。
+    </div>
+
+    <div class="phase-block">
+      <div class="phase-head ph2">
+        <div class="phase-head-left">
+          <span class="phase-head-title">Phase 2 タスクリスト</span>
+          <span class="phase-tag">AWS環境構築</span>
+        </div>
+        <span class="phase-period">作業場所：AWSコンソール・ローカル</span>
+      </div>
+      <div class="phase-body">
+        <div class="phase-cols">
+          <div>
+            <div class="task-group-label">IAM・認証</div>
+            <div class="task-list">
+              <div class="task-item"><div class="task-check"></div><div class="task-text">AWS開発用IAMユーザー作成（AdministratorAccess）</div></div>
+              <div class="task-item"><div class="task-check"></div><div class="task-text">Cognito ユーザープール作成<div class="task-note">ログイン方法：メール+パスワード / MFA設定</div></div></div>
+              <div class="task-item"><div class="task-check"></div><div class="task-text">Cognitoにテスト用ユーザーを登録</div></div>
+            </div>
+            <div class="task-group-label">ストレージ</div>
+            <div class="task-list">
+              <div class="task-item"><div class="task-check"></div><div class="task-text">S3バケット作成：<code>invoice-dev-uploads</code><div class="task-note">アップロードされたPDF・画像の一時置き場</div></div></div>
+              <div class="task-item"><div class="task-check"></div><div class="task-text">S3バケット作成：<code>invoice-dev-processed</code><div class="task-note">OCR処理済みファイルの保管先</div></div></div>
+              <div class="task-item"><div class="task-check"></div><div class="task-text">S3のアクセス権限（バケットポリシー）設定</div></div>
+            </div>
+            <div class="task-group-label">データベース</div>
+            <div class="task-list">
+              <div class="task-item"><div class="task-check"></div><div class="task-text">DynamoDB テーブル作成：<code>Invoices</code></div></div>
+              <div class="task-item"><div class="task-check"></div><div class="task-text">DynamoDB テーブル作成：<code>ApprovalLogs</code></div></div>
+              <div class="task-item"><div class="task-check"></div><div class="task-text">DynamoDB テーブル作成：<code>Users</code></div></div>
+            </div>
+          </div>
+          <div>
+            <div class="task-group-label">処理・AI</div>
+            <div class="task-list">
+              <div class="task-item"><div class="task-check"></div><div class="task-text">Lambda 関数作成：<code>ocr-trigger</code><div class="task-note">S3アップロード検知 → Textract起動</div></div></div>
+              <div class="task-item"><div class="task-check"></div><div class="task-text">Lambda 関数作成：<code>approval-handler</code><div class="task-note">承認・差し戻し → DynamoDB更新</div></div></div>
+              <div class="task-item"><div class="task-check"></div><div class="task-text">Lambda 関数作成：<code>notify-sender</code><div class="task-note">Slack/Teams/メール通知</div></div></div>
+              <div class="task-item"><div class="task-check"></div><div class="task-text">Amazon Textract 動作確認（サンプルPDFで項目抽出テスト）</div></div>
+            </div>
+            <div class="task-group-label">API・フロントエンド</div>
+            <div class="task-list">
+              <div class="task-item"><div class="task-check"></div><div class="task-text">API Gateway 作成（Lambda をREST APIに紐付け）</div></div>
+              <div class="task-item"><div class="task-check"></div><div class="task-text">AWS Amplify でフロントエンドをデプロイ<div class="task-note">v2のHTMLをAmplify + API連携に改修</div></div></div>
+              <div class="task-item"><div class="task-check"></div><div class="task-text">Amplify と Cognito を接続（ログインを本物に）</div></div>
+              <div class="task-item"><div class="task-check"></div><div class="task-text">通知設定（SES or Slack Webhook）</div></div>
+              <div class="task-item"><div class="task-check"></div><div class="task-text">Lambdaコードを GitHub private リポジトリで管理</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- データの場所（フェーズ2） -->
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>データの種類</th>
+          <th>保存場所</th>
+          <th>用途</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>請求書PDF・画像</td>
+          <td><span class="data-tag tag-s3">S3</span><span class="data-location">invoice-dev-uploads</span></td>
+          <td>アップロード後の一時保管・Textractへの入力元</td>
+        </tr>
+        <tr>
+          <td>OCR抽出データ</td>
+          <td><span class="data-tag tag-db">DynamoDB</span><span class="data-location">Invoicesテーブル</span></td>
+          <td>取引先名・金額・日付・請求番号などの構造化データ</td>
+        </tr>
+        <tr>
+          <td>ユーザー情報</td>
+          <td><span class="data-tag tag-cognito">Cognito</span><span class="data-location">ユーザープール</span></td>
+          <td>ログイン認証・権限管理</td>
+        </tr>
+        <tr>
+          <td>承認履歴</td>
+          <td><span class="data-tag tag-db">DynamoDB</span><span class="data-location">ApprovalLogsテーブル</span></td>
+          <td>誰がいつ承認・差し戻ししたかの記録</td>
+        </tr>
+        <tr>
+          <td>フロントエンド（画面）</td>
+          <td><span class="data-tag tag-amplify">Amplify</span><span class="data-location">Amplify Hosting</span></td>
+          <td>ブラウザからアクセスするWebアプリ本体</td>
+        </tr>
+        <tr>
+          <td>Lambdaコード</td>
+          <td><span class="data-tag tag-github">GitHub</span><span class="data-location">private リポジトリ</span></td>
+          <td>バックエンド処理のソースコード管理</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- フェーズ3 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <div class="section-title">フェーズ3：開発・テスト（自分の環境で完結）</div>
+    </div>
+
+    <div class="summary-box">
+      <strong>目的：</strong>自分のAWS環境で全機能が正しく動くことを確認する。クライアントにはまだ渡さない。ここで問題を全部つぶしてからフェーズ4へ。
+    </div>
+
+    <div class="phase-block">
+      <div class="phase-head ph3">
+        <div class="phase-head-left">
+          <span class="phase-head-title">Phase 3 タスクリスト</span>
+          <span class="phase-tag">開発・テスト</span>
+        </div>
+        <span class="phase-period">作業場所：自分のAWS・ブラウザ</span>
+      </div>
+      <div class="phase-body">
+        <div class="phase-cols">
+          <div>
+            <div class="task-group-label">基本動作確認</div>
+            <div class="task-list">
+              <div class="task-item"><div class="task-check"></div><div class="task-text">ログイン〜ログアウトの動作確認</div></div>
+              <div class="task-item"><div class="task-check"></div><div class="task-text">PDFアップロード → S3保存の確認</div></div>
+              <div class="task-item"><div class="task-check"></div><div class="task-text">Textract OCR実行 → 結果表示の確認</div></div>
+              <div class="task-item"><div class="task-check"></div><div class="task-text">OCR結果の修正・保存が反映されるか確認</div></div>
+              <div class="task-item"><div class="task-check"></div><div class="task-text">承認フロー（承認・差し戻し）の動作確認</div></div>
+              <div class="task-item"><div class="task-check"></div><div class="task-text">通知メール or Slack の到達確認</div></div>
+            </div>
+          </div>
+          <div>
+            <div class="task-group-label">ルール・エラー確認</div>
+            <div class="task-list">
+              <div class="task-item"><div class="task-check"></div><div class="task-text">承認ルール（金額分岐）の動作確認<div class="task-note">10万円以上 → 部長承認ルートに流れるか</div></div></div>
+              <div class="task-item"><div class="task-check"></div><div class="task-text">エラーケースのテスト<div class="task-note">読み取れないPDF / 重複ファイル / 大容量ファイル</div></div></div>
+              <div class="task-item"><div class="task-check"></div><div class="task-text">一覧の検索・フィルター・ソートの確認</div></div>
+              <div class="task-item"><div class="task-check"></div><div class="task-text">CSV出力の動作確認</div></div>
+              <div class="task-item"><div class="task-check"></div><div class="task-text">権限テスト（一般ユーザーが承認ボタンを押せないか）</div></div>
+              <div class="task-item"><div class="task-check"></div><div class="task-text">✅ 全項目OKでフェーズ4へ</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- フェーズ4 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <div class="section-title">フェーズ4：クライアント環境への構築（本番）</div>
+    </div>
+
+    <div class="summary-box">
+      <strong>目的：</strong>フェーズ2〜3で作った環境と同じ構成を、クライアント側のAWSに再現する。まず<strong>AWSアカウントの方針を決める</strong>ことが最初のステップ。
+    </div>
+
+    <!-- AWSアカウント方針 -->
+    <div class="decision-grid">
+      <div class="decision-card">
+        <div class="decision-card-title"><span style="background:var(--sky-light);color:var(--sky-dark);font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px">パターンA</span> クライアントのAWSアカウント</div>
+        <ul>
+          <li>クライアントがAWSアカウントを用意</li>
+          <li>AWS料金は直接クライアント負担</li>
+          <li>引き渡し後は自分で管理してもらう</li>
+          <li>データの所有権がクライアント側にある</li>
+        </ul>
+      </div>
+      <div class="decision-card">
+        <div class="decision-card-title"><span style="background:var(--green-bg);color:#15803d;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px">パターンB</span> 自分のAWSアカウントで運用</div>
+        <ul>
+          <li>自分がインフラ管理を継続</li>
+          <li>月額料金をクライアントに請求</li>
+          <li>複数クライアントを1アカウントで管理可能</li>
+          <li>サポート・保守もセットで提供しやすい</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="phase-block">
+      <div class="phase-head ph4">
+        <div class="phase-head-left">
+          <span class="phase-head-title">Phase 4 タスクリスト</span>
+          <span class="phase-tag">本番環境構築</span>
+        </div>
+        <span class="phase-period">作業場所：AWSコンソール（本番）</span>
+      </div>
+      <div class="phase-body">
+        <div class="phase-cols">
+          <div>
+            <div class="task-group-label">AWSリソース作成（本番設定）</div>
+            <div class="task-list">
+              <div class="task-item"><div class="task-check"></div><div class="task-text">本番用AWSアカウントにログイン</div></div>
+              <div class="task-item"><div class="task-check"></div><div class="task-text">Cognito ユーザープール作成（本番）</div></div>
+              <div class="task-item"><div class="task-check"></div><div class="task-text">S3バケット作成（本番・リソース名を変更）<div class="task-note">invoice-prod-uploads / invoice-prod-processed</div></div></div>
+              <div class="task-item"><div class="task-check"></div><div class="task-text">DynamoDB テーブル作成（本番）</div></div>
+              <div class="task-item"><div class="task-check"></div><div class="task-text">Lambda 関数をデプロイ（本番設定）</div></div>
+              <div class="task-item"><div class="task-check"></div><div class="task-text">API Gateway 作成</div></div>
+              <div class="task-item"><div class="task-check"></div><div class="task-text">Amplify でフロントをデプロイ</div></div>
+            </div>
+          </div>
+          <div>
+            <div class="task-group-label">本番固有の設定</div>
+            <div class="task-list">
+              <div class="task-item"><div class="task-check"></div><div class="task-text">S3バックアップ設定を有効化</div></div>
+              <div class="task-item"><div class="task-check"></div><div class="task-text">CloudWatch でログ・アラート設定</div></div>
+              <div class="task-item"><div class="task-check"></div><div class="task-text">独自ドメイン設定（必要な場合）<div class="task-note">Route53 or クライアント保有ドメインをAmplifyに接続</div></div></div>
+              <div class="task-item"><div class="task-check"></div><div class="task-text">クライアント管理者アカウントをCognitoに作成</div></div>
+              <div class="task-item"><div class="task-check"></div><div class="task-text">本番データで動作確認（実際の請求書PDFで1件通す）</div></div>
+              <div class="task-item"><div class="task-check"></div><div class="task-text">✅ 全項目OKでフェーズ5へ</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 本番データの場所 -->
+        <div style="margin-top:20px">
+          <div style="font-size:12px;font-weight:700;color:var(--gray-600);margin-bottom:10px">本番環境のデータ所在地</div>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>データ</th>
+                <th>場所</th>
+                <th>備考</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>請求書PDF（原本）</td>
+                <td><span class="data-tag tag-s3">S3</span><span class="data-location">東京リージョン</span></td>
+                <td>クライアントのAWS or 自分のAWS（方針により）</td>
+              </tr>
+              <tr>
+                <td>全業務データ</td>
+                <td><span class="data-tag tag-db">DynamoDB</span></td>
+                <td>請求書情報・承認ログ・ユーザー情報すべて</td>
+              </tr>
+              <tr>
+                <td>ログイン・権限情報</td>
+                <td><span class="data-tag tag-cognito">Cognito</span></td>
+                <td>従業員のアカウント管理</td>
+              </tr>
+              <tr>
+                <td>アクセスURL</td>
+                <td><span class="data-tag tag-amplify">Amplify</span></td>
+                <td>Amplify発行のURL or 独自ドメイン（例：invoice.client.co.jp）</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- フェーズ5 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <div class="section-title">フェーズ5：納品・引き渡し</div>
+    </div>
+
+    <div class="summary-box">
+      <strong>目的：</strong>クライアントが自走できる状態にして引き渡す。マニュアル・ハンズオン・アカウント渡しがセット。検収サイン後に入金確認。
+    </div>
+
+    <div class="phase-block">
+      <div class="phase-head ph5">
+        <div class="phase-head-left">
+          <span class="phase-head-title">Phase 5 タスクリスト</span>
+          <span class="phase-tag">納品・引き渡し</span>
+        </div>
+        <span class="phase-period">作業場所：現地 or 画面共有</span>
+      </div>
+      <div class="phase-body">
+        <div class="phase-cols">
+          <div>
+            <div class="task-group-label">引き渡し準備</div>
+            <div class="task-list">
+              <div class="task-item"><div class="task-check"></div><div class="task-text">操作マニュアルの作成<div class="task-note">アップロード方法 / OCR確認 / 承認操作 / ユーザー追加</div></div></div>
+              <div class="task-item"><div class="task-check"></div><div class="task-text">管理者用マニュアルの作成<div class="task-note">ユーザー管理 / 承認ルール変更 / 通知設定変更</div></div></div>
+              <div class="task-item"><div class="task-check"></div><div class="task-text">管理者ユーザーの初期設定（クライアント担当者のアカウント作成）</div></div>
+              <div class="task-item"><div class="task-check"></div><div class="task-text">ログインURL・初期パスワードの準備</div></div>
+            </div>
+          </div>
+          <div>
+            <div class="task-group-label">ハンズオン・検収</div>
+            <div class="task-list">
+              <div class="task-item"><div class="task-check"></div><div class="task-text">初回ハンズオン実施（現地 or 画面共有）<div class="task-note">実際の請求書を1件通しで操作してもらう</div></div></div>
+              <div class="task-item"><div class="task-check"></div><div class="task-text">AWSコンソールへのアクセス権限をクライアントへ付与（パターンAの場合）</div></div>
+              <div class="task-item"><div class="task-check"></div><div class="task-text">月額AWS費用の目安を書面で共有</div></div>
+              <div class="task-item"><div class="task-check"></div><div class="task-text">サポート体制の取り決め（連絡先・対応時間）</div></div>
+              <div class="task-item"><div class="task-check"></div><div class="task-text">✅ 検収サイン → 入金確認 → 完了</div></div>
+            </div>
+          </div>
+        </div>
+
+        <div style="background:var(--green-bg);border:1px solid #a7f3d0;border-radius:var(--radius);padding:12px 16px;margin-top:16px;font-size:12px;color:#064e3b">
+          <strong>引き渡しチェックリスト（最終確認）</strong><br>
+          □ 管理者パスワードを渡したか &nbsp;｜&nbsp; □ マニュアルを渡したか &nbsp;｜&nbsp; □ AWSアクセス権を移したか（パターンA）<br>
+          □ 月額費用を伝えたか &nbsp;｜&nbsp; □ サポート連絡先を伝えたか &nbsp;｜&nbsp; □ 検収サインをもらったか
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 費用目安 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">6</div>
+      <div class="section-title">費用目安（ランニングコスト）</div>
+    </div>
+
+    <table class="cost-table">
+      <thead>
+        <tr>
+          <th>AWSサービス</th>
+          <th>用途</th>
+          <th style="text-align:right">月額概算</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>AWS Amplify</strong></td>
+          <td>フロントエンドホスティング</td>
+          <td style="text-align:right">無料〜数百円</td>
+        </tr>
+        <tr>
+          <td><strong>Amazon S3</strong></td>
+          <td>請求書PDF保管（50GB想定）</td>
+          <td style="text-align:right">約 150円</td>
+        </tr>
+        <tr>
+          <td><strong>Amazon DynamoDB</strong></td>
+          <td>データ管理（少量利用）</td>
+          <td style="text-align:right">無料〜数百円</td>
+        </tr>
+        <tr>
+          <td><strong>AWS Lambda</strong></td>
+          <td>自動処理（呼び出し回数依存）</td>
+          <td style="text-align:right">ほぼ無料</td>
+        </tr>
+        <tr>
+          <td><strong>Amazon Textract</strong></td>
+          <td>OCR処理（月100件想定）</td>
+          <td style="text-align:right">約 1,500円</td>
+        </tr>
+        <tr>
+          <td><strong>Amazon Cognito</strong></td>
+          <td>ユーザー認証（50ユーザー以下）</td>
+          <td style="text-align:right">無料</td>
+        </tr>
+        <tr>
+          <td><strong>Amazon SES</strong></td>
+          <td>メール通知</td>
+          <td style="text-align:right">ほぼ無料</td>
+        </tr>
+        <tr class="total-row">
+          <td colspan="2"><strong>合計（月額目安）</strong></td>
+          <td style="text-align:right">約 2,000〜3,000円/月</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="cost-note">※ 処理件数・ストレージ量によって変動します。月300件以上になる場合は別途見積もりを。<br>※ AWSアカウントはクライアント保有のものをそのまま利用可能（パターンAの場合、料金はクライアント負担）。</p>
+  </div>
+
+  <!-- 次のアクション -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">7</div>
+      <div class="section-title">今すぐできる次のアクション</div>
+    </div>
+
+    <div class="step-list">
+      <div class="step-item">
+        <div class="step-circle">1</div>
+        <div>
+          <div class="step-title">モックを使ってヒアリングを実施する</div>
+          <div class="step-desc">invoice-mock v2 のURLをクライアントに見せながら、画面・機能・承認ルールを固める。このフェーズ内で修正を完結させること。</div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-circle">2</div>
+        <div>
+          <div class="step-title">モックOKが出たらAWS開発環境を構築開始</div>
+          <div class="step-desc">自分のAWSアカウントでフェーズ2のタスクを上から順に実施。CognitoとS3から始めると進めやすい。</div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-circle">3</div>
+        <div>
+          <div class="step-title">本番環境への移行前にAWSアカウント方針を確認</div>
+          <div class="step-desc">クライアント自身のAWS（パターンA）か自分のAWSで管理（パターンB）かを事前に決めておく。どちらも費用の話がセットになる。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===== FOOTER ===== -->
+<div class="doc-footer">
+  <span>モック→納品 完全フローガイド v1.0 &nbsp;／&nbsp; InvoiceAI プロジェクト</span>
+  <span>このガイドは受注者（自分）向けの業務マニュアルです</span>
+</div>
+
+</body>
+</html>
