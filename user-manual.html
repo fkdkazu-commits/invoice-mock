@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>操作マニュアル — InvoiceAI 請求書自動処理システム</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', 'Helvetica Neue', sans-serif; background: #f4f6f9; color: #333; line-height: 1.7; }
+    header { background: #1a2b4a; color: white; padding: 28px 40px; }
+    header h1 { font-size: 22px; font-weight: 700; }
+    header p { font-size: 13px; color: #aac4e0; margin-top: 6px; }
+    .container { max-width: 900px; margin: 32px auto; padding: 0 24px 60px; }
+
+    .toc { background: white; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,.08); padding: 20px 24px; margin-bottom: 28px; }
+    .toc h2 { font-size: 14px; font-weight: 700; color: #1a2b4a; margin-bottom: 12px; }
+    .toc ol { padding-left: 20px; }
+    .toc li { font-size: 13px; margin-bottom: 5px; }
+    .toc a { color: #2563eb; text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+
+    .section { background: white; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,.08); margin-bottom: 24px; overflow: hidden; }
+    .section-header { background: #1a2b4a; color: white; padding: 16px 24px; display: flex; align-items: center; gap: 14px; }
+    .section-header .num { background: #3d6b9e; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; flex-shrink: 0; }
+    .section-header h2 { font-size: 17px; font-weight: 600; }
+    .section-body { padding: 24px; }
+
+    h3 { font-size: 14px; font-weight: 700; color: #1a2b4a; margin: 20px 0 10px; padding-bottom: 6px; border-bottom: 2px solid #e8eef5; }
+    h3:first-child { margin-top: 0; }
+    h4 { font-size: 13px; font-weight: 600; color: #555; margin: 14px 0 6px; }
+
+    .steps { list-style: none; margin: 10px 0 16px; padding: 0; }
+    .steps li { display: flex; gap: 14px; margin-bottom: 12px; font-size: 14px; align-items: flex-start; }
+    .steps li .n { background: #1a2b4a; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+    .steps li .txt { flex: 1; }
+
+    .screen-mock {
+      background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
+      margin: 12px 0 16px; overflow: hidden;
+    }
+    .screen-mock-bar {
+      background: #1a2b4a; padding: 8px 14px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .screen-mock-bar span { font-size: 11px; color: rgba(255,255,255,.5); }
+    .screen-mock-bar .dot { width: 8px; height: 8px; border-radius: 50%; }
+    .screen-mock-body { padding: 16px 18px; font-size: 12px; color: #555; line-height: 1.9; }
+    .screen-mock-body strong { color: #1a2b4a; }
+    .screen-mock-body .field { background: white; border: 1px solid #ddd; border-radius: 4px; padding: 4px 10px; display: inline-block; font-family: monospace; color: #333; margin: 1px 0; }
+    .screen-mock-body .btn-mock { background: #2563eb; color: white; border-radius: 5px; padding: 5px 14px; display: inline-block; font-size: 12px; font-weight: 600; }
+    .screen-mock-body .btn-mock.green { background: #16a34a; }
+    .screen-mock-body .btn-mock.red { background: #dc2626; }
+    .screen-mock-body .btn-mock.gray { background: #6b7280; }
+    .screen-mock-body .badge { border-radius: 999px; padding: 1px 8px; font-size: 11px; font-weight: 600; }
+    .badge-orange { background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
+    .badge-green { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+    .badge-blue { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+
+    .note { background: #fffbea; border-left: 4px solid #f59e0b; padding: 10px 14px; border-radius: 0 6px 6px 0; font-size: 13px; margin: 12px 0; }
+    .info { background: #eff6ff; border-left: 4px solid #3b82f6; padding: 10px 14px; border-radius: 0 6px 6px 0; font-size: 13px; margin: 12px 0; }
+    .warn { background: #fff1f2; border-left: 4px solid #f43f5e; padding: 10px 14px; border-radius: 0 6px 6px 0; font-size: 13px; margin: 12px 0; }
+    .success { background: #f0fdf4; border-left: 4px solid #22c55e; padding: 10px 14px; border-radius: 0 6px 6px 0; font-size: 13px; margin: 12px 0; }
+
+    code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 12px; color: #be185d; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 12px 0; }
+    th { background: #f0f4f8; text-align: left; padding: 9px 12px; font-weight: 600; color: #555; border: 1px solid #ddd; }
+    td { padding: 9px 12px; border: 1px solid #ddd; vertical-align: top; }
+    td.key { font-weight: 600; color: #1a2b4a; width: 200px; }
+    .flow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 14px 0; }
+    .flow-step { background: #1a2b4a; color: white; border-radius: 6px; padding: 6px 14px; font-size: 13px; font-weight: 600; }
+    .flow-arrow { color: #94a3b8; font-size: 18px; }
+    footer { text-align: center; color: #999; font-size: 12px; padding: 24px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>InvoiceAI 操作マニュアル</h1>
+  <p>請求書自動処理システム ／ エンドユーザー向け ／ ver 1.1</p>
+</header>
+
+<div class="container">
+
+  <!-- 目次 -->
+  <div class="toc">
+    <h2>目次</h2>
+    <ol>
+      <li><a href="#flow">システムの全体フロー</a></li>
+      <li><a href="#login">ログイン</a></li>
+      <li><a href="#dashboard">ダッシュボード</a></li>
+      <li><a href="#upload">請求書アップロード</a></li>
+      <li><a href="#ocr">OCR結果確認・修正</a></li>
+      <li><a href="#approval">承認・差し戻し</a></li>
+      <li><a href="#faq">よくある質問・トラブル対応</a></li>
+    </ol>
+  </div>
+
+  <!-- 全体フロー -->
+  <div class="section" id="flow">
+    <div class="section-header">
+      <div class="num">1</div>
+      <h2>システムの全体フロー</h2>
+    </div>
+    <div class="section-body">
+      <div class="info">請求書が届いてから承認完了までの流れです。各担当者がどのステップを行うか確認してください。</div>
+
+      <div class="flow">
+        <div class="flow-step">① 請求書受領</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">② アップロード</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">③ OCR確認</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">④ 承認依頼</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">⑤ 承認完了</div>
+      </div>
+
+      <table>
+        <tr><th>ステップ</th><th>操作内容</th><th>担当</th></tr>
+        <tr><td>① 請求書受領</td><td>取引先からPDF・画像で請求書を受け取る</td><td>経理担当者</td></tr>
+        <tr><td>② アップロード</td><td>システムに請求書ファイルをアップロードする</td><td>経理担当者</td></tr>
+        <tr><td>③ OCR確認</td><td>AIが読み取った内容を確認・修正する</td><td>経理担当者</td></tr>
+        <tr><td>④ 承認依頼</td><td>「確認完了・承認へ進む」で承認フローへ送る</td><td>経理担当者</td></tr>
+        <tr><td>⑤ 承認・差し戻し</td><td>内容を確認して承認または差し戻しを行う</td><td>承認担当者</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- ログイン -->
+  <div class="section" id="login">
+    <div class="section-header">
+      <div class="num">2</div>
+      <h2>ログイン</h2>
+    </div>
+    <div class="section-body">
+      <div class="info">システムを使用するにはログインが必要です。IDとパスワードは管理者から発行されます。</div>
+
+      <h3>ログイン手順</h3>
+      <ol class="steps">
+        <li><span class="n">1</span><span class="txt">ブラウザで下記のURLを開く</span></li>
+        <li><span class="n">2</span><span class="txt"><strong>メールアドレス</strong>を入力する</span></li>
+        <li><span class="n">3</span><span class="txt"><strong>パスワード</strong>を入力する</span></li>
+        <li><span class="n">4</span><span class="txt">「ログイン」ボタンをクリックする</span></li>
+        <li><span class="n">5</span><span class="txt">ダッシュボードが表示されればログイン完了</span></li>
+      </ol>
+
+      <div class="screen-mock">
+        <div class="screen-mock-bar">
+          <div class="dot" style="background:#ff5f57"></div>
+          <div class="dot" style="background:#ffbd2e"></div>
+          <div class="dot" style="background:#28c840"></div>
+          <span>InvoiceAI — ログイン</span>
+        </div>
+        <div class="screen-mock-body">
+          <div style="max-width:320px; margin:0 auto; padding:16px 0">
+            <div style="font-size:16px;font-weight:700;color:#1a2b4a;margin-bottom:16px;text-align:center">InvoiceAI</div>
+            <div style="margin-bottom:10px">
+              <div style="font-size:11px;font-weight:600;margin-bottom:3px">メールアドレス</div>
+              <div class="field" style="width:100%;display:block">例: tanaka@company.co.jp</div>
+            </div>
+            <div style="margin-bottom:14px">
+              <div style="font-size:11px;font-weight:600;margin-bottom:3px">パスワード</div>
+              <div class="field" style="width:100%;display:block">••••••••</div>
+            </div>
+            <div class="btn-mock" style="width:100%;text-align:center;display:block">ログイン</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="warn">パスワードを忘れた場合は管理者に連絡してください。自己リセットには対応していません。</div>
+      <div class="note">セキュリティのため、作業終了後はブラウザのタブを閉じてください。次回アクセス時は再度ログインが必要です。</div>
+    </div>
+  </div>
+
+  <!-- ダッシュボード -->
+  <div class="section" id="dashboard">
+    <div class="section-header">
+      <div class="num">3</div>
+      <h2>ダッシュボード</h2>
+    </div>
+    <div class="section-body">
+      <div class="info">ログイン後に表示されるトップ画面です。請求書の処理状況を一目で確認できます。</div>
+
+      <h3>画面の見方</h3>
+      <table>
+        <tr><th>表示項目</th><th>内容</th></tr>
+        <tr><td class="key">今月の件数</td><td>今月アップロードされた請求書の総件数</td></tr>
+        <tr><td class="key">承認待ち</td><td>現在承認を待っている請求書の件数</td></tr>
+        <tr><td class="key">承認済み</td><td>今月承認が完了した請求書の件数</td></tr>
+        <tr><td class="key">月次グラフ</td><td>過去6ヶ月の請求書件数の推移</td></tr>
+        <tr><td class="key">最近の請求書</td><td>直近5件の処理状況</td></tr>
+      </table>
+
+      <h3>左サイドバーのメニュー</h3>
+      <table>
+        <tr><th>メニュー</th><th>機能</th></tr>
+        <tr><td class="key">ダッシュボード</td><td>トップ画面（処理状況の概要）</td></tr>
+        <tr><td class="key">請求書アップロード</td><td>新しい請求書をアップロードする</td></tr>
+        <tr><td class="key">OCR結果確認</td><td>AIが読み取った内容を確認・修正する</td></tr>
+        <tr><td class="key">承認フロー</td><td>承認待ちの請求書を確認・承認する</td></tr>
+        <tr><td class="key">ステータス一覧</td><td>全請求書の処理状況を一覧で確認する</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- アップロード -->
+  <div class="section" id="upload">
+    <div class="section-header">
+      <div class="num">4</div>
+      <h2>請求書アップロード</h2>
+    </div>
+    <div class="section-body">
+      <div class="info">取引先から受け取った請求書をシステムに登録します。PDF・PNG・JPG・TIFFに対応しています。</div>
+
+      <h3>アップロード手順</h3>
+      <ol class="steps">
+        <li><span class="n">1</span><span class="txt">左メニューの「請求書アップロード」をクリック</span></li>
+        <li><span class="n">2</span><span class="txt">「ファイルを選択」ボタンをクリック、またはファイルをドラッグ＆ドロップ</span></li>
+        <li><span class="n">3</span><span class="txt">アップロードしたいファイルを選択（複数ファイルの一括選択可能）</span></li>
+        <li><span class="n">4</span><span class="txt">ファイルが一覧に表示されたことを確認する</span></li>
+        <li><span class="n">5</span><span class="txt"><strong>OCR エンジンを選択する</strong>（詳細は下表参照）</span></li>
+        <li><span class="n">6</span><span class="txt">「アップロードして OCR 処理を開始」ボタンをクリック</span></li>
+        <li><span class="n">7</span><span class="txt">プログレスバーが100%になり「✓ 完了」と表示されれば成功</span></li>
+        <li><span class="n">8</span><span class="txt">自動的に「OCR結果確認」画面へ移動する</span></li>
+      </ol>
+
+      <div class="screen-mock">
+        <div class="screen-mock-bar">
+          <div class="dot" style="background:#ff5f57"></div>
+          <div class="dot" style="background:#ffbd2e"></div>
+          <div class="dot" style="background:#28c840"></div>
+          <span>請求書アップロード</span>
+        </div>
+        <div class="screen-mock-body">
+          <div style="border:2px dashed #cbd5e1;border-radius:8px;padding:24px;text-align:center;margin-bottom:12px">
+            <div style="font-size:13px;font-weight:600;margin-bottom:4px">ファイルをドラッグ＆ドロップ</div>
+            <div style="font-size:11px;color:#888;margin-bottom:10px">PDF / PNG / JPG / TIFF ／ 最大20MB</div>
+            <div class="btn-mock gray" style="font-size:11px">ファイルを選択</div>
+          </div>
+          <div style="background:white;border:1px solid #e2e8f0;border-radius:6px;padding:10px 14px;display:flex;align-items:center;gap:10px;margin-bottom:10px">
+            <div style="width:32px;height:32px;background:#fee2e2;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#dc2626">PDF</div>
+            <div style="flex:1"><div style="font-size:12px;font-weight:600">invoice_2026_04.pdf</div><div style="font-size:10px;color:#888">256KB</div></div>
+            <div style="font-size:11px;font-weight:600;color:#16a34a">✓ 完了</div>
+          </div>
+          <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:10px 14px;margin-bottom:10px">
+            <div style="font-size:11px;font-weight:700;color:#555;margin-bottom:6px">OCR エンジンを選択</div>
+            <div style="display:flex;flex-direction:column;gap:5px">
+              <label style="display:flex;align-items:center;gap:7px;font-size:12px;cursor:pointer">
+                <input type="radio" name="demo-engine" checked style="accent-color:#1a2b4a"> Textract（標準）
+              </label>
+              <label style="display:flex;align-items:center;gap:7px;font-size:12px;cursor:pointer">
+                <input type="radio" name="demo-engine" style="accent-color:#1a2b4a"> Claude Vision（高精度 AI-OCR）
+              </label>
+            </div>
+          </div>
+          <div style="text-align:right">
+            <div class="btn-mock">アップロードして OCR 処理を開始</div>
+          </div>
+        </div>
+      </div>
+
+      <h3>OCR エンジンの選び方</h3>
+      <table>
+        <tr><th>エンジン</th><th>特徴</th><th>こんな時に選ぶ</th></tr>
+        <tr>
+          <td><strong>Textract（標準）</strong></td>
+          <td>AWSが提供する標準OCR。日本語の印刷文字・PDFに対応。処理速度が速い。</td>
+          <td>通常の請求書・印刷が鮮明なPDF・処理件数が多い場合</td>
+        </tr>
+        <tr>
+          <td><strong>Claude Vision<br>（高精度 AI-OCR）</strong></td>
+          <td>AIが画像全体を理解して抽出。手書き・スキャン・レイアウトが複雑な請求書で高精度。</td>
+          <td>Textractで読み取り精度が低かった請求書・手書き文字が含まれる場合・スキャン画質が悪い場合</td>
+        </tr>
+      </table>
+      <div class="note">迷ったらまず「Textract（標準）」を使ってください。OCR確認画面で読み取り結果が大きくずれていた場合に、同じファイルを「Claude Vision」で再アップロードするのがおすすめです。</div>
+
+      <h3>対応ファイル形式</h3>
+      <table>
+        <tr><th>形式</th><th>拡張子</th><th>備考</th></tr>
+        <tr><td>PDF</td><td>.pdf</td><td>最も推奨。テキストPDFも画像PDFも対応</td></tr>
+        <tr><td>PNG</td><td>.png</td><td>スキャン画像に対応</td></tr>
+        <tr><td>JPEG</td><td>.jpg / .jpeg</td><td>スキャン画像に対応</td></tr>
+        <tr><td>TIFF</td><td>.tiff</td><td>高解像度スキャンに対応</td></tr>
+      </table>
+      <div class="note">1ファイルの最大サイズは20MBです。それを超える場合は管理者にご相談ください。</div>
+      <div class="note">複数ファイルを同時にアップロードできます。まとめて選択してください。</div>
+    </div>
+  </div>
+
+  <!-- OCR確認 -->
+  <div class="section" id="ocr">
+    <div class="section-header">
+      <div class="num">5</div>
+      <h2>OCR結果確認・修正</h2>
+    </div>
+    <div class="section-body">
+      <div class="info">AIが請求書から読み取った内容を確認します。内容が正しければそのまま、誤りがあれば修正してから承認フローへ進めます。</div>
+
+      <h3>確認手順</h3>
+      <ol class="steps">
+        <li><span class="n">1</span><span class="txt">アップロード完了後、自動的にこの画面が開く</span></li>
+        <li><span class="n">2</span><span class="txt">上部のタブで確認する請求書を選択する（複数ある場合）</span></li>
+        <li><span class="n">3</span><span class="txt">右側の「AI抽出結果」エリアで各フィールドを確認する</span></li>
+        <li><span class="n">4</span><span class="txt">誤りがある場合は、入力欄をクリックして直接修正する</span></li>
+        <li><span class="n">5</span><span class="txt">すべて確認・修正したら「確認完了・承認へ進む」ボタンをクリック</span></li>
+        <li><span class="n">6</span><span class="txt">「承認フローに送付しました」と表示されたら完了</span></li>
+      </ol>
+
+      <h3>確認が必要な項目</h3>
+      <table>
+        <tr><th>項目</th><th>内容</th><th>確認ポイント</th></tr>
+        <tr><td class="key">取引先名</td><td>請求書を発行した会社名</td><td>正式名称と一致しているか</td></tr>
+        <tr><td class="key">請求書番号</td><td>請求書に記載の管理番号</td><td>数字・アルファベットの読み間違いに注意</td></tr>
+        <tr><td class="key">発行日</td><td>請求書の発行日</td><td>年月日が正確か</td></tr>
+        <tr><td class="key">支払期限</td><td>支払期限日</td><td>特に手書きの場合は要確認</td></tr>
+        <tr><td class="key">請求金額（税込）</td><td>支払うべき合計金額</td><td>桁数・小数点に注意</td></tr>
+        <tr><td class="key">適格請求書番号</td><td>インボイス制度の登録番号</td><td>T+13桁の形式</td></tr>
+      </table>
+
+      <div class="warn">金額・支払期限の誤りは支払いミスにつながります。特に慎重に確認してください。</div>
+      <div class="note">「手動入力モード」と表示されている場合、AIによる自動読み取りが未実施です。すべての項目を手動で入力してください。</div>
+      <div class="info"><strong>読み取り精度が低い場合：</strong>アップロード画面で「Claude Vision（高精度 AI-OCR）」を選択して同じファイルを再アップロードすると、精度が改善する場合があります。特に手書き文字・スキャン画像・複雑なレイアウトの請求書で有効です。</div>
+    </div>
+  </div>
+
+  <!-- 承認 -->
+  <div class="section" id="approval">
+    <div class="section-header">
+      <div class="num">6</div>
+      <h2>承認・差し戻し</h2>
+    </div>
+    <div class="section-body">
+      <div class="info">OCR確認が完了した請求書を承認または差し戻します。承認担当者が行う操作です。</div>
+
+      <h3>承認手順</h3>
+      <ol class="steps">
+        <li><span class="n">1</span><span class="txt">左メニューの「承認フロー」をクリック</span></li>
+        <li><span class="n">2</span><span class="txt">「承認待ち」タブに表示されている請求書をクリックして選択</span></li>
+        <li><span class="n">3</span><span class="txt">右側の詳細パネルで請求書の内容を確認する</span></li>
+        <li><span class="n">4</span><span class="txt">問題なければ「承認」ボタンをクリック</span></li>
+        <li><span class="n">5</span><span class="txt">確認ダイアログが表示されたら「承認する」をクリック</span></li>
+        <li><span class="n">6</span><span class="txt">「承認しました」と表示され、リストから消えれば完了</span></li>
+      </ol>
+
+      <div class="screen-mock">
+        <div class="screen-mock-bar">
+          <div class="dot" style="background:#ff5f57"></div>
+          <div class="dot" style="background:#ffbd2e"></div>
+          <div class="dot" style="background:#28c840"></div>
+          <span>承認フロー</span>
+        </div>
+        <div class="screen-mock-body">
+          <div style="display:flex;gap:8px;margin-bottom:12px">
+            <div style="padding:4px 12px;background:#1a2b4a;color:white;border-radius:4px;font-size:11px;font-weight:600">承認待ち <span style="background:white;color:#1a2b4a;border-radius:999px;padding:0 5px;margin-left:4px">2</span></div>
+            <div style="padding:4px 12px;background:#f1f5f9;color:#888;border-radius:4px;font-size:11px">承認済み</div>
+            <div style="padding:4px 12px;background:#f1f5f9;color:#888;border-radius:4px;font-size:11px">差し戻し</div>
+          </div>
+          <div style="background:white;border:2px solid #2563eb;border-radius:8px;padding:12px 14px;margin-bottom:8px">
+            <div style="font-size:12px;font-weight:700">株式会社サンプル商事</div>
+            <div style="font-size:10px;color:#888;margin-top:2px">INV-2026-0042 · 2026/05/04</div>
+            <div style="font-size:13px;font-weight:800;margin-top:4px">¥330,000</div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:12px">
+            <div class="btn-mock red" style="flex:1;text-align:center">差し戻し</div>
+            <div class="btn-mock green" style="flex:2;text-align:center">承認</div>
+          </div>
+        </div>
+      </div>
+
+      <h3>差し戻し手順</h3>
+      <ol class="steps">
+        <li><span class="n">1</span><span class="txt">承認フロー画面で対象の請求書を選択する</span></li>
+        <li><span class="n">2</span><span class="txt">「差し戻し」ボタンをクリック</span></li>
+        <li><span class="n">3</span><span class="txt">差し戻し理由を入力する（例：金額が請求書と一致しない）</span></li>
+        <li><span class="n">4</span><span class="txt">「差し戻す」ボタンをクリック</span></li>
+      </ol>
+      <div class="note">差し戻しを行うと担当者にメールで通知されます。理由は具体的に記入してください。</div>
+
+      <h3>差し戻し後の対応（経理担当者）</h3>
+      <div class="info">差し戻された請求書はダッシュボードの「差し戻し処理待ち」タスクに表示されます。</div>
+      <ol class="steps">
+        <li><span class="n">1</span><span class="txt">ダッシュボードの「差し戻し処理待ち」またはメール通知のリンクから承認フロー画面を開く</span></li>
+        <li><span class="n">2</span><span class="txt">「差し戻し」タブに移動し、対象の請求書を選択する</span></li>
+        <li><span class="n">3</span><span class="txt">差し戻し理由を確認する</span></li>
+        <li><span class="n">4</span><span class="txt">「OCR確認画面へ戻す」ボタンをクリックする</span></li>
+        <li><span class="n">5</span><span class="txt">OCR確認画面が開くので、内容を修正して「確認完了・承認へ進む」を再度クリックする</span></li>
+      </ol>
+      <div class="note">差し戻しは「削除」ではありません。同じ請求書のOCRデータを修正して再申請できます。ファイルを再アップロードする必要はありません。</div>
+
+      <h3>ステータスの種類</h3>
+      <table>
+        <tr><th>ステータス</th><th>意味</th></tr>
+        <tr><td><span class="badge badge-blue">処理中</span></td><td>アップロード済み・OCR確認待ちの状態</td></tr>
+        <tr><td><span class="badge badge-orange">承認待ち</span></td><td>OCR確認済み・承認担当者の対応待ちの状態</td></tr>
+        <tr><td><span class="badge badge-green">承認済み</span></td><td>承認完了・支払処理へ進める状態</td></tr>
+        <tr><td><span class="badge" style="background:#fff1f2;color:#be123c;border:1px solid #fecdd3">差し戻し</span></td><td>内容に問題があり再確認が必要な状態</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- FAQ -->
+  <div class="section" id="faq">
+    <div class="section-header">
+      <div class="num">7</div>
+      <h2>よくある質問・トラブル対応</h2>
+    </div>
+    <div class="section-body">
+
+      <h3>ログイン関連</h3>
+      <h4>Q. パスワードを忘れた</h4>
+      <p style="font-size:13px;margin-bottom:12px">管理者に連絡してパスワードの再設定を依頼してください。</p>
+
+      <h4>Q. ログインしたのにすぐログイン画面に戻る</h4>
+      <p style="font-size:13px;margin-bottom:12px">ブラウザのセッションが切れています。再度メールアドレスとパスワードを入力してログインしてください。</p>
+
+      <h3>アップロード関連</h3>
+      <h4>Q. アップロードに失敗する</h4>
+      <p style="font-size:13px;margin-bottom:4px">以下を確認してください：</p>
+      <ul style="font-size:13px;padding-left:20px;margin-bottom:12px;line-height:1.9">
+        <li>ファイルサイズが20MB以下か</li>
+        <li>対応形式（PDF/PNG/JPG/TIFF）か</li>
+        <li>インターネットに接続されているか</li>
+      </ul>
+
+      <h4>Q. 同じファイルを2回アップロードしてしまった</h4>
+      <p style="font-size:13px;margin-bottom:12px">管理者に連絡して重複分の削除を依頼してください。</p>
+
+      <h3>OCR確認関連</h3>
+      <h4>Q. OCR結果確認画面に何も表示されない</h4>
+      <p style="font-size:13px;margin-bottom:12px">「OCR確認待ちの請求書はありません」と表示されている場合、アップロードが完了していないか、すでに全件確認済みです。アップロード画面から再度アップロードしてください。</p>
+
+      <h4>Q. 読み取り結果が大きく違う</h4>
+      <p style="font-size:13px;margin-bottom:4px">2つの方法があります：</p>
+      <ul style="font-size:13px;padding-left:20px;margin-bottom:12px;line-height:1.9">
+        <li><strong>修正する：</strong>各入力欄をクリックして正しい値に直接修正し、「確認完了・承認へ進む」を押す</li>
+        <li><strong>再アップロードする：</strong>アップロード画面で同じファイルを「Claude Vision（高精度 AI-OCR）」エンジンで再アップロードする（スキャン品質が悪い・手書き文字がある場合に有効）</li>
+      </ul>
+
+      <h4>Q. Textract と Claude Vision はどちらを選べばよいか</h4>
+      <p style="font-size:13px;margin-bottom:12px">通常は「Textract（標準）」で問題ありません。読み取り結果がずれていた場合や、手書き・スキャン品質が悪い請求書の場合は「Claude Vision」を試してください。詳しくはセクション4の「OCR エンジンの選び方」を参照してください。</p>
+
+      <h4>Q. 複数の請求書をアップロードしたとき、確認画面で別の請求書に切り替えると最初の請求書に戻ってしまう</h4>
+      <p style="font-size:13px;margin-bottom:12px">「更新」ボタンを押した際に選択が1件目にリセットされる場合があります。確認したい請求書のタブを再度クリックして選択し直してください。</p>
+
+      <h3>承認関連</h3>
+      <h4>Q. 承認したのに承認待ちリストに残っている</h4>
+      <p style="font-size:13px;margin-bottom:12px">画面を再読み込み（F5キー）してください。それでも残っている場合は管理者に連絡してください。</p>
+
+      <div class="success">上記で解決しない場合はシステム管理者へご連絡ください。</div>
+    </div>
+  </div>
+
+</div>
+
+<footer>InvoiceAI 操作マニュアル ver 1.1 ／ エンドユーザー向け ／ 更新: 2026-05-05（OCRエンジン切り替え機能追加）</footer>
+
+</body>
+</html>
