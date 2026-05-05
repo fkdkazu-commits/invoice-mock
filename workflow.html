@@ -384,7 +384,7 @@
   <div class="cover-meta">
     対象：<span>自社（受注者）</span>
     &nbsp;&nbsp;用途：<span>業務進行・チェックリスト</span>
-    &nbsp;&nbsp;バージョン：<span>v1.0</span>
+    &nbsp;&nbsp;バージョン：<span>v1.1</span>
   </div>
 </div>
 
@@ -531,9 +531,10 @@
           <div>
             <div class="task-group-label">処理・AI</div>
             <div class="task-list">
-              <div class="task-item"><div class="task-check"></div><div class="task-text">Lambda 関数作成：<code>ocr-trigger</code><div class="task-note">S3アップロード検知 → Textract起動</div></div></div>
+              <div class="task-item"><div class="task-check"></div><div class="task-text">Lambda 関数作成：<code>ocr-trigger</code><div class="task-note">S3アップロード検知 → OCRエンジン分岐（Textract / Claude Vision）</div></div></div>
               <div class="task-item"><div class="task-check"></div><div class="task-text">Lambda 関数作成：<code>approval-handler</code><div class="task-note">承認・差し戻し → DynamoDB更新</div></div></div>
               <div class="task-item"><div class="task-check"></div><div class="task-text">Lambda 関数作成：<code>notify-sender</code><div class="task-note">Slack/Teams/メール通知</div></div></div>
+              <div class="task-item"><div class="task-check"></div><div class="task-text">OCRエンジンの選択と設定<div class="task-note">Textract（標準）or Claude Vision（高精度）。Claude Vision使用時はLambda Layerの作成とSSM Parameter StoreへのAPIキー登録が必要。</div></div></div>
               <div class="task-item"><div class="task-check"></div><div class="task-text">Amazon Textract 動作確認（サンプルPDFで項目抽出テスト）</div></div>
             </div>
             <div class="task-group-label">API・フロントエンド</div>
@@ -619,7 +620,7 @@
             <div class="task-list">
               <div class="task-item"><div class="task-check"></div><div class="task-text">ログイン〜ログアウトの動作確認</div></div>
               <div class="task-item"><div class="task-check"></div><div class="task-text">PDFアップロード → S3保存の確認</div></div>
-              <div class="task-item"><div class="task-check"></div><div class="task-text">Textract OCR実行 → 結果表示の確認</div></div>
+              <div class="task-item"><div class="task-check"></div><div class="task-text">OCR実行 → 結果表示の確認<div class="task-note">Textract / Claude Vision の両エンジンで精度を比較するとよい</div></div></div>
               <div class="task-item"><div class="task-check"></div><div class="task-text">OCR結果の修正・保存が反映されるか確認</div></div>
               <div class="task-item"><div class="task-check"></div><div class="task-text">承認フロー（承認・差し戻し）の動作確認</div></div>
               <div class="task-item"><div class="task-check"></div><div class="task-text">通知メール or Slack の到達確認</div></div>
@@ -841,6 +842,11 @@
           <td style="text-align:right">約 1,500円</td>
         </tr>
         <tr>
+          <td><strong>Claude API</strong></td>
+          <td>Claude Vision OCR使用時（月100件想定）</td>
+          <td style="text-align:right">約 600〜1,000円</td>
+        </tr>
+        <tr>
           <td><strong>Amazon Cognito</strong></td>
           <td>ユーザー認証（50ユーザー以下）</td>
           <td style="text-align:right">無料</td>
@@ -853,6 +859,11 @@
         <tr class="total-row">
           <td colspan="2"><strong>合計（月額目安）</strong></td>
           <td style="text-align:right">約 2,000〜3,000円/月</td>
+        </tr>
+        <tr>
+          <td colspan="3" style="font-size:11px;color:#64748b;padding:10px 16px">
+            ※ Claude Vision OCR を選択した場合、Textract の代わりに Claude API が発生します（両方同時に使った場合は合計されます）。精度が重要な案件では Claude Vision を推奨。
+          </td>
         </tr>
       </tbody>
     </table>
