@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>要件定義・設計書 — invoice-system</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f4f6f9; color: #333; line-height: 1.7; }
+    header { background: #1a2b4a; color: white; padding: 24px 40px; }
+    header h1 { font-size: 22px; font-weight: 600; }
+    header p { font-size: 13px; color: #aac4e0; margin-top: 4px; }
+    .container { max-width: 980px; margin: 32px auto; padding: 0 24px 60px; }
+
+    /* TOC */
+    .toc { background: white; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,.08); padding: 20px 24px; margin-bottom: 28px; }
+    .toc h2 { font-size: 14px; font-weight: 700; color: #1a2b4a; margin-bottom: 14px; border-bottom: 2px solid #e0e6ef; padding-bottom: 8px; }
+    .toc-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 0 32px; }
+    .toc-part { margin-bottom: 8px; }
+    .toc-part-title { font-size: 12px; font-weight: 700; color: #8e44ad; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
+    .toc a { color: #2980b9; font-size: 13px; text-decoration: none; display: block; padding: 2px 0; }
+    .toc a:hover { text-decoration: underline; }
+
+    /* Section cards */
+    .part-label { font-size: 12px; font-weight: 700; color: #8e44ad; text-transform: uppercase; letter-spacing: 1px; margin: 32px 0 10px; padding-left: 4px; }
+    .section { background: white; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,.08); margin-bottom: 20px; overflow: hidden; }
+    .section-header {
+      background: #1a2b4a; color: white; padding: 14px 24px;
+      display: flex; align-items: center; gap: 12px;
+      cursor: pointer; user-select: none;
+    }
+    .section-header.req { background: #1a4a3a; }
+    .section-header .num { background: #3d6b9e; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: bold; flex-shrink: 0; }
+    .section-header.req .num { background: #2d8a6a; }
+    .section-header h2 { font-size: 16px; font-weight: 600; }
+    .section-header .badge { margin-left: auto; background: #27ae60; border-radius: 12px; padding: 2px 10px; font-size: 12px; flex-shrink: 0; }
+    .section-header .badge.warn { background: #e67e22; }
+    .section-header .badge.todo { background: #c0392b; }
+    .section-header .toggle { margin-left: 8px; font-size: 14px; transition: transform .2s; }
+    .section-body { padding: 22px 24px; display: block; }
+    .section-body.collapsed { display: none; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 14px; margin: 10px 0 16px; }
+    th { background: #f0f4f8; text-align: left; padding: 8px 12px; font-weight: 600; color: #555; border: 1px solid #ddd; }
+    td { padding: 8px 12px; border: 1px solid #ddd; vertical-align: top; }
+    td.key { font-weight: 600; color: #1a2b4a; width: 200px; }
+    td.key-s { font-weight: 600; color: #1a4a3a; width: 200px; }
+    code { background: #f0f4f8; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 13px; color: #c0392b; }
+    .note { background: #fffbea; border-left: 4px solid #f39c12; padding: 10px 14px; border-radius: 0 6px 6px 0; font-size: 13px; margin: 10px 0; }
+    .warn-box { background: #fff0f0; border-left: 4px solid #e74c3c; padding: 10px 14px; border-radius: 0 6px 6px 0; font-size: 13px; margin: 10px 0; }
+    .info { background: #eaf4fb; border-left: 4px solid #2980b9; padding: 10px 14px; border-radius: 0 6px 6px 0; font-size: 13px; margin: 10px 0; }
+    .success { background: #f0fff4; border-left: 4px solid #27ae60; padding: 10px 14px; border-radius: 0 6px 6px 0; font-size: 13px; margin: 10px 0; }
+    h3 { font-size: 14px; font-weight: 700; color: #1a2b4a; margin: 20px 0 8px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+    h3.req-h { color: #1a4a3a; }
+    h4 { font-size: 13px; font-weight: 600; color: #555; margin: 14px 0 6px; }
+    ul { margin: 6px 0 12px 20px; font-size: 14px; }
+    li { margin-bottom: 4px; }
+    pre { background: #1a1a2e; color: #e8e8e8; padding: 14px 16px; border-radius: 8px; font-size: 12px; overflow-x: auto; margin: 8px 0 16px; line-height: 1.8; }
+    .check-list { list-style: none; margin-left: 0; }
+    .check-list li { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 6px; font-size: 14px; }
+    .check-list li.done::before { content: '✅'; flex-shrink: 0; }
+    .check-list li.todo-item::before { content: '🔲'; flex-shrink: 0; }
+    .check-list li.warn-item::before { content: '⚠️'; flex-shrink: 0; }
+    .phase-box { border: 1px solid #ddd; border-radius: 8px; padding: 14px 16px; margin: 10px 0; }
+    .phase-box h4 { margin-top: 0; }
+    .divider { border: none; border-top: 1px dashed #ddd; margin: 16px 0; }
+    footer { text-align: center; color: #999; font-size: 12px; padding: 24px; }
+    .tag { display: inline-block; background: #e8f0fe; color: #1a56db; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin: 2px 2px; }
+    .tag.red { background: #fde8e8; color: #c0392b; }
+    .tag.green { background: #e8fde8; color: #27ae60; }
+    .tag.orange { background: #fef3e8; color: #e67e22; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>要件定義書 ／ 設計書 — invoice-system</h1>
+  <p>作成日: 2026-05-05 ／ 作成者: fkdkazu ／ ローカル管理専用（Amplify非公開）</p>
+</header>
+
+<div class="container">
+
+  <!-- 目次 -->
+  <div class="toc">
+    <h2>目次</h2>
+    <div class="toc-cols">
+      <div>
+        <div class="toc-part">
+          <div class="toc-part-title">要件定義</div>
+          <a href="#req1">1. プロジェクト概要</a>
+          <a href="#req2">2. ユーザー・権限定義</a>
+          <a href="#req3">3. 機能要件</a>
+          <a href="#req4">4. ビジネスロジック・業務ルール</a>
+          <a href="#req5">5. 非機能要件</a>
+          <a href="#req6">6. 制約条件</a>
+          <a href="#req7">7. 未確定事項・未対応項目</a>
+          <a href="#req8">8. ヒアリングメモ</a>
+        </div>
+      </div>
+      <div>
+        <div class="toc-part">
+          <div class="toc-part-title">設計書</div>
+          <a href="#des1">1. 技術スタック</a>
+          <a href="#des2">2. データベース設計</a>
+          <a href="#des3">3. 画面設計</a>
+          <a href="#des4">4. API設計</a>
+          <a href="#des5">5. ディレクトリ構成</a>
+          <a href="#des6">6. 開発フェーズ</a>
+          <a href="#des7">7. セキュリティ考慮事項</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ================== 要件定義 ================== -->
+  <div class="part-label">要件定義書</div>
+
+  <!-- R1 -->
+  <div class="section" id="req1">
+    <div class="section-header req" onclick="toggle(this)">
+      <div class="num">R1</div>
+      <h2>プロジェクト概要</h2>
+      <span class="toggle">▼</span>
+    </div>
+    <div class="section-body">
+      <h3 class="req-h">目的</h3>
+      <p style="font-size:14px">
+        中小企業の経理担当者が紙・PDFで受け取る請求書を、AIによるOCRで自動読み取りし、
+        確認・承認・ステータス管理をクラウド上で完結できる社内Webアプリケーションを構築する。
+        現状の「Excelによる手動転記」を廃し、ヒューマンエラー削減と処理速度向上を実現する。
+      </p>
+
+      <h3 class="req-h">主要機能</h3>
+      <ul>
+        <li>Cognito認証によるログイン（メールアドレス＋パスワード）</li>
+        <li>PDF請求書のS3アップロード（OCRエンジン選択：Textract / Claude Vision）</li>
+        <li>OCR自動読み取り結果の確認・手修正・承認申請</li>
+        <li>承認フロー（承認 / 差し戻し / 再確認申請）</li>
+        <li>請求書ステータス一覧・CSV出力・PDF閲覧</li>
+        <li>ダッシュボード（統計・差し戻し処理待ちタスク）</li>
+        <li>SESメール通知（承認・差し戻し時）</li>
+        <li>管理者設定（会社情報・OCR設定・承認ルール・通知設定・ユーザー管理）</li>
+      </ul>
+
+      <h3 class="req-h">システム概要図</h3>
+      <pre>
+ユーザー（ブラウザ）
+  │
+  ├─ AWS Amplify ── フロントエンド（HTML/CSS/JS）
+  │
+  ├─ Amazon Cognito ── 認証（JWT idToken）
+  │
+  ├─ API Gateway (HTTPS)
+  │     ├─ GET  /invoices          → list_handler (Lambda)
+  │     ├─ POST /invoices/presign  → presign_handler (Lambda)
+  │     ├─ POST /invoices/confirm  → ocr_confirm_handler (Lambda)
+  │     └─ POST /approval          → approval_handler (Lambda)
+  │
+  ├─ Amazon S3 ── 請求書PDF保管（Presigned URL）
+  │     └─ S3トリガー → ocr_trigger (Lambda)
+  │           ├─ Amazon Textract（OCRエンジン: textract）
+  │           └─ Claude Vision API（OCRエンジン: claude）
+  │
+  ├─ Amazon DynamoDB
+  │     ├─ Invoices テーブル
+  │     ├─ ApprovalLogs テーブル
+  │     └─ Users テーブル
+  │
+  ├─ AWS SES ── メール通知 → notify_sender (Lambda)
+  └─ AWS SSM Parameter Store ── Anthropic APIキー管理
+      </pre>
+    </div>
+  </div>
+
+  <!-- R2 -->
+  <div class="section" id="req2">
+    <div class="section-header req" onclick="toggle(this)">
+      <div class="num">R2</div>
+      <h2>ユーザー・権限定義</h2>
+      <span class="toggle">▼</span>
+    </div>
+    <div class="section-body">
+      <div class="info">現時点ではCognitoユーザープールで全員同一権限。管理者ロール分けは未実装（未対応項目）。</div>
+      <table>
+        <tr>
+          <th>ロール</th>
+          <th>説明</th>
+          <th>できること</th>
+          <th>できないこと</th>
+        </tr>
+        <tr>
+          <td><strong>管理者 (admin)</strong></td>
+          <td>システム全体を管理する担当者</td>
+          <td>全機能利用・全請求書閲覧・承認・管理者設定変更・ユーザー管理</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td><strong>承認者 (approver)</strong></td>
+          <td>請求書の承認・差し戻しを行う担当者</td>
+          <td>承認フロー操作・ステータス閲覧</td>
+          <td>管理者設定の変更・ユーザー追加</td>
+        </tr>
+        <tr>
+          <td><strong>一般ユーザー (user)</strong></td>
+          <td>請求書をアップロードする経理担当者</td>
+          <td>PDFアップロード・自分のOCR結果確認・ステータス閲覧</td>
+          <td>他者のデータ編集・承認操作・管理者設定</td>
+        </tr>
+      </table>
+      <div class="note">ロール分けはCognito Groupsで実装予定。現在はログイン済みユーザーが全操作可能。</div>
+    </div>
+  </div>
+
+  <!-- R3 -->
+  <div class="section" id="req3">
+    <div class="section-header req" onclick="toggle(this)">
+      <div class="num">R3</div>
+      <h2>機能要件</h2>
+      <span class="toggle">▼</span>
+    </div>
+    <div class="section-body">
+
+      <h3 class="req-h">3.1 ログイン・認証</h3>
+      <ul>
+        <li>Cognito User Pool によるメールアドレス＋パスワード認証</li>
+        <li>JWT idToken を <code>sessionStorage.token</code> に保存し、以後のAPI呼び出しで使用</li>
+        <li>ログイン成功後、Lambda コールドスタート解消のためウォームアップfetchを実行（800ms後にダッシュボードへ遷移）</li>
+        <li>未ログイン状態でのページアクセスはトップへリダイレクト</li>
+        <li>ログアウト機能あり（sessionStorage クリア）</li>
+      </ul>
+
+      <h3 class="req-h">3.2 PDFアップロード（upload.html）</h3>
+      <ul>
+        <li>PDFファイルのドラッグ＆ドロップまたはファイル選択</li>
+        <li>OCRエンジン選択（ラジオボタン: Textract / Claude Vision）</li>
+        <li>Presigned URL経由でS3に直接アップロード</li>
+        <li>アップロード後、S3トリガーで <code>ocr_trigger</code> Lambda が自動起動</li>
+        <li>ベンダー名・請求書番号・金額・支払期限などのメタ情報を入力可能（任意）</li>
+      </ul>
+
+      <h3 class="req-h">3.3 OCR結果確認（ocr-confirm.html）</h3>
+      <ul>
+        <li>OCR処理中のステータスをポーリングで取得（初回1秒、以降2秒間隔）</li>
+        <li>OCR完了後、読み取り結果（ベンダー名・請求書番号・金額・支払期限・摘要）を表示</li>
+        <li>各フィールドを手動修正可能</li>
+        <li>「確認・承認申請」ボタンで <code>ocr_confirm</code> APIを呼び出し、ステータスを <code>pending_approval</code> に更新</li>
+        <li>「再処理」ボタン（スタブ・未実装）</li>
+      </ul>
+
+      <h3 class="req-h">3.4 承認フロー（approval.html）</h3>
+      <ul>
+        <li>4タブ構成: 承認待ち / 承認済み / 差し戻し / 全て</li>
+        <li>承認待ちタブ: 各請求書に「承認」「差し戻し」ボタン。コメント入力欄あり</li>
+        <li>差し戻しタブ: 「OCR確認画面へ戻す（再確認申請）」ボタン（reconfirmアクション）</li>
+        <li>承認・差し戻し時にSESメール通知をトリガー（notify_sender Lambda を非同期呼び出し）</li>
+      </ul>
+
+      <h3 class="req-h">3.5 ステータス一覧（list.html）</h3>
+      <ul>
+        <li>全請求書をDynamoDBからスキャンして表示</li>
+        <li>月別フィルター・ステータスフィルター</li>
+        <li>請求書番号をクリックするとS3 Presigned URLでPDFを開く</li>
+        <li>CSVエクスポート機能</li>
+        <li>「詳細」ボタン（スタブ・未実装）</li>
+      </ul>
+
+      <h3 class="req-h">3.6 ダッシュボード（dashboard.html）</h3>
+      <ul>
+        <li>集計サマリー: 今月の請求書数・合計金額・承認待ち件数・差し戻し件数</li>
+        <li>差し戻し処理待ちタスク一覧（<code>rejected</code>ステータスの請求書）</li>
+        <li>最近の請求書一覧（直近10件）</li>
+      </ul>
+
+      <h3 class="req-h">3.7 管理者設定（settings.html）</h3>
+      <ul>
+        <li>一般設定タブ: 会社名・会計年度・タイムゾーン（UI実装済み・保存API未接続）</li>
+        <li>OCR設定タブ: エンジン切り替えトグル4項目（UI実装済み・API未接続）</li>
+        <li>承認ルールタブ: ルール一覧・追加モーダル（スタブ）</li>
+        <li>通知設定タブ: メール/Slack/Teamsトグル・Webhook URL（API未接続）</li>
+        <li>ユーザー管理タブ: ユーザー一覧（ダミーデータ）・招待機能（スタブ）</li>
+        <li>開発用ツール: 全履歴クリアボタン（<span class="tag red">本番前削除</span>）</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- R4 -->
+  <div class="section" id="req4">
+    <div class="section-header req" onclick="toggle(this)">
+      <div class="num">R4</div>
+      <h2>ビジネスロジック・業務ルール</h2>
+      <span class="toggle">▼</span>
+    </div>
+    <div class="section-body">
+
+      <h3 class="req-h">ステータスフロー（正式版）</h3>
+      <pre>
+アップロード
+  └→ [processing]   ← S3アップロード時に presign_handler が DynamoDB登録
+        │
+        └→ [processing]   ← OCR完了時に ocr_trigger が各フィールドを更新
+              │
+              └→ [pending_approval]   ← ユーザーがOCR確認後に「承認申請」
+                    │
+                    ├→ [approved]   ← 承認者が「承認」
+                    │
+                    └→ [rejected]   ← 承認者が「差し戻し」
+                          │
+                          └→ [processing]   ← ユーザーが「再確認申請 (reconfirm)」
+                                             → OCR確認画面に戻る
+      </pre>
+      <div class="note">差し戻し（rejected）は「削除」ではなく「巻き戻し」。archive アクションは廃止済み。</div>
+
+      <h3 class="req-h">OCRエンジン切り替えルール</h3>
+      <ul>
+        <li>アップロード時にユーザーが選択したエンジン名（<code>"textract"</code> or <code>"claude"</code>）をDynamoDB <code>Invoices.ocrEngine</code> フィールドに保存</li>
+        <li><code>ocr_trigger</code> Lambda がこのフィールドを読み取り、処理を分岐</li>
+        <li>Textract: Seoul（ap-northeast-2）リージョン使用（ap-northeast-1 未対応）</li>
+        <li>Claude Vision: PDFをPyMuPDFでPNG変換 → base64 → Claude API（<code>claude-opus-4-7</code>）</li>
+      </ul>
+
+      <h3 class="req-h">承認ルール</h3>
+      <ul>
+        <li>承認・差し戻し操作は <code>pending_approval</code> ステータスの請求書のみ可能</li>
+        <li>再確認申請（reconfirm）は <code>rejected</code> ステータスの請求書のみ可能</li>
+        <li>承認・差し戻し時はApprovalLogsテーブルにログを記録</li>
+        <li>承認時・差し戻し時にアップロード者へメール通知（SES）</li>
+      </ul>
+
+      <h3 class="req-h">通知ルール</h3>
+      <ul>
+        <li>通知対象: 承認（approved）・差し戻し（rejected）のアクション時</li>
+        <li>通知先: <code>uploadedBy</code>（アップロードしたユーザーのメールアドレス）</li>
+        <li>現状: SESサンドボックス中のため検証済みアドレス宛のみ送信可能</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- R5 -->
+  <div class="section" id="req5">
+    <div class="section-header req" onclick="toggle(this)">
+      <div class="num">R5</div>
+      <h2>非機能要件</h2>
+      <span class="toggle">▼</span>
+    </div>
+    <div class="section-body">
+      <table>
+        <tr><th>項目</th><th>内容</th></tr>
+        <tr><td class="key-s">対象デバイス</td><td>PC メイン（Chrome / Edge / Safari）</td></tr>
+        <tr><td class="key-s">デザイン優先度</td><td>中（社内ツール。清潔感のあるビジネスUIを優先）</td></tr>
+        <tr><td class="key-s">同時利用人数</td><td>10人以下（中小企業の経理部門想定）</td></tr>
+        <tr><td class="key-s">認証方式</td><td>Amazon Cognito JWT（idToken）</td></tr>
+        <tr><td class="key-s">通信</td><td>HTTPS必須（Amplify・API Gateway ともにSSL）</td></tr>
+        <tr><td class="key-s">デプロイ先</td><td>AWS Amplify（フロントエンド） / Lambda（バックエンド）</td></tr>
+        <tr><td class="key-s">OCR処理時間</td><td>Textract: 5〜15秒、Claude Vision: 15〜30秒（PDF枚数依存）</td></tr>
+        <tr><td class="key-s">APIレスポンス</td><td>通常 500ms以内（Lambdaコールドスタート除く）</td></tr>
+        <tr><td class="key-s">データ保持</td><td>DynamoDB・S3は無期限（本番運用後はライフサイクルポリシー検討）</td></tr>
+        <tr><td class="key-s">バックアップ</td><td>DynamoDB Point-in-Time Recovery 有効化推奨</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- R6 -->
+  <div class="section" id="req6">
+    <div class="section-header req" onclick="toggle(this)">
+      <div class="num">R6</div>
+      <h2>制約条件</h2>
+      <span class="toggle">▼</span>
+    </div>
+    <div class="section-body">
+      <table>
+        <tr><th>項目</th><th>内容</th></tr>
+        <tr><td class="key-s">サーバー環境</td><td>AWS（ap-northeast-1 東京リージョン ／ OCR用 ap-northeast-2 ソウル）</td></tr>
+        <tr><td class="key-s">言語（バックエンド）</td><td>Python 3.12（Lambda）</td></tr>
+        <tr><td class="key-s">言語（フロントエンド）</td><td>HTML / CSS / Vanilla JavaScript（フレームワーク不使用）</td></tr>
+        <tr><td class="key-s">OCR外部API</td><td>Anthropic Claude API（APIキーはSSM Parameter Storeで管理）</td></tr>
+        <tr><td class="key-s">Lambda Layer</td><td><code>invoice-ocr-layer</code>（anthropic + PyMuPDF、manylinux2014_x86_64でビルド必須）</td></tr>
+        <tr><td class="key-s">Lambda メモリ</td><td>ocr_trigger は 512MB 必須（128MBはOutOfMemory）</td></tr>
+        <tr><td class="key-s">メール送信</td><td>SESサンドボックス中（本番前に解除申請が必要）</td></tr>
+        <tr><td class="key-s">引き継ぎ想定</td><td>なし（個人開発・自社運用）</td></tr>
+        <tr><td class="key-s">コスト目安</td><td>Lambda・DynamoDB・S3はほぼ無料枠内。Claude API利用分が従量課金</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- R7 -->
+  <div class="section" id="req7">
+    <div class="section-header req" onclick="toggle(this)">
+      <div class="num">R7</div>
+      <h2>未確定事項・未対応項目</h2>
+      <span class="badge warn">要対応あり</span>
+      <span class="toggle">▼</span>
+    </div>
+    <div class="section-body">
+      <h3 class="req-h">本番運用前に必須</h3>
+      <table>
+        <tr><th>#</th><th>項目</th><th>優先度</th><th>対応方針</th></tr>
+        <tr>
+          <td>1</td>
+          <td>SES サンドボックス解除申請</td>
+          <td><span class="tag red">高</span></td>
+          <td>AWS Console → SES → Request production access。aws-setup.html セクション7参照</td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td>開発用ツール削除（settings.html「全履歴クリア」カード）</td>
+          <td><span class="tag red">高</span></td>
+          <td>本番デプロイ前に settings.html 該当カードを削除</td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td>list_handler DELETE ハンドラ削除</td>
+          <td><span class="tag red">高</span></td>
+          <td>list_handler/app.py の DELETE ブロックを削除</td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td>approval_handler clear_all_dev ブロック削除</td>
+          <td><span class="tag red">高</span></td>
+          <td>approval_handler/app.py の clear_all_dev ブロックと関数を削除</td>
+        </tr>
+      </table>
+
+      <h3 class="req-h">管理者設定（settings.html）未対応</h3>
+      <table>
+        <tr><th>項目</th><th>現状</th></tr>
+        <tr><td>一般設定（会社名・会計年度・タイムゾーン）保存</td><td>UI実装済み・保存API未接続</td></tr>
+        <tr><td>OCR設定トグル（4項目）</td><td>UI実装済み・API未接続</td></tr>
+        <tr><td>承認ルール追加・編集モーダル</td><td>スタブ</td></tr>
+        <tr><td>通知設定トグル（メール/Slack/Teams）</td><td>UI実装済み・API未接続</td></tr>
+        <tr><td>Slack Webhook URL（SSM自動取得）</td><td>未実装</td></tr>
+        <tr><td>ユーザー一覧（Cognitoから実データ取得）</td><td>ダミーデータ使用</td></tr>
+        <tr><td>ユーザー招待機能</td><td>スタブ</td></tr>
+        <tr><td>リマインダー日数・エスカレーション設定保存</td><td>未実装</td></tr>
+      </table>
+
+      <h3 class="req-h">他ページ未対応</h3>
+      <table>
+        <tr><th>ページ</th><th>項目</th><th>現状</th></tr>
+        <tr><td>ocr-confirm.html</td><td>「再処理」ボタン</td><td>スタブ・API未接続</td></tr>
+        <tr><td>list.html</td><td>「詳細」表示</td><td>スタブ</td></tr>
+        <tr><td>全ページ</td><td>権限ロール分け（Cognito Groups連携）</td><td>未実装</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- R8 -->
+  <div class="section" id="req8">
+    <div class="section-header req" onclick="toggle(this)">
+      <div class="num">R8</div>
+      <h2>ヒアリングメモ（AI要約）</h2>
+      <span class="toggle">▼</span>
+    </div>
+    <div class="section-body">
+      <div class="note">PlaudなどのAI録音アプリが出力した要約テキストをここに貼り付ける。Claude Codeへのインプット情報として使用する。</div>
+      <pre style="color:#aaa; font-style:italic">（未入力）</pre>
+    </div>
+  </div>
+
+
+  <!-- ================== 設計書 ================== -->
+  <div class="part-label">設計書</div>
+
+  <!-- D1 -->
+  <div class="section" id="des1">
+    <div class="section-header" onclick="toggle(this)">
+      <div class="num">D1</div>
+      <h2>技術スタック</h2>
+      <span class="toggle">▼</span>
+    </div>
+    <div class="section-body">
+      <table>
+        <tr><th>カテゴリ</th><th>技術</th><th>選定理由</th></tr>
+        <tr>
+          <td><strong>フロントエンド</strong></td>
+          <td>HTML / CSS / Vanilla JavaScript</td>
+          <td>フレームワーク不要。軽量・高速開発可能。Amplifyで静的ホスティング</td>
+        </tr>
+        <tr>
+          <td><strong>バックエンド</strong></td>
+          <td>Python 3.12（AWS Lambda）</td>
+          <td>サーバーレス。コスト最小化。boto3でAWSサービスと親和性高い</td>
+        </tr>
+        <tr>
+          <td><strong>データベース</strong></td>
+          <td>Amazon DynamoDB</td>
+          <td>サーバーレス・スキーマレス。請求書データの柔軟な構造に適合</td>
+        </tr>
+        <tr>
+          <td><strong>認証</strong></td>
+          <td>Amazon Cognito</td>
+          <td>JWT管理・ユーザープール・MFA対応をマネージドで提供</td>
+        </tr>
+        <tr>
+          <td><strong>ファイルストレージ</strong></td>
+          <td>Amazon S3</td>
+          <td>Presigned URLで安全なPDF保管。S3トリガーでOCR自動起動</td>
+        </tr>
+        <tr>
+          <td><strong>OCR（A）</strong></td>
+          <td>Amazon Textract（ap-northeast-2）</td>
+          <td>日本語請求書への高精度対応。Seoul リージョン使用（東京未対応）</td>
+        </tr>
+        <tr>
+          <td><strong>OCR（B）</strong></td>
+          <td>Anthropic Claude Vision（claude-opus-4-7）</td>
+          <td>複雑レイアウト・手書き混在への柔軟対応。SSMでAPIキー管理</td>
+        </tr>
+        <tr>
+          <td><strong>APIゲートウェイ</strong></td>
+          <td>Amazon API Gateway（REST API）</td>
+          <td>HTTPS・CORS・Cognito Authorizer統合。Lambda統合でCORS安定</td>
+        </tr>
+        <tr>
+          <td><strong>メール通知</strong></td>
+          <td>Amazon SES</td>
+          <td>AWS内でメール送信。Lambda非同期呼び出しで承認通知を送信</td>
+        </tr>
+        <tr>
+          <td><strong>ホスティング</strong></td>
+          <td>AWS Amplify</td>
+          <td>GitHubからCI/CDデプロイ。Cognito認証との統合が容易</td>
+        </tr>
+        <tr>
+          <td><strong>シークレット管理</strong></td>
+          <td>AWS SSM Parameter Store（SecureString）</td>
+          <td>Anthropic APIキーをLambdaから安全に取得。ハードコード不要</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- D2 -->
+  <div class="section" id="des2">
+    <div class="section-header" onclick="toggle(this)">
+      <div class="num">D2</div>
+      <h2>データベース設計（DynamoDB）</h2>
+      <span class="toggle">▼</span>
+    </div>
+    <div class="section-body">
+
+      <h3>2.1 Invoices テーブル（請求書）</h3>
+      <table>
+        <tr><th>フィールド名</th><th>型</th><th>制約</th><th>説明</th></tr>
+        <tr><td><code>invoice_id</code></td><td>String</td><td>PK（パーティションキー）</td><td>UUID。スネークケース厳守</td></tr>
+        <tr><td><code>status</code></td><td>String</td><td></td><td>processing / pending_approval / approved / rejected</td></tr>
+        <tr><td><code>ocrEngine</code></td><td>String</td><td></td><td>"textract" or "claude"。アップロード時に保存</td></tr>
+        <tr><td><code>s3Key</code></td><td>String</td><td></td><td>S3オブジェクトキー（PDFパス）</td></tr>
+        <tr><td><code>uploadedBy</code></td><td>String</td><td></td><td>アップロードしたユーザーのメールアドレス</td></tr>
+        <tr><td><code>vendor</code></td><td>String</td><td></td><td>ベンダー名（OCR結果 or 手入力）</td></tr>
+        <tr><td><code>invoiceNumber</code></td><td>String</td><td></td><td>請求書番号</td></tr>
+        <tr><td><code>amount</code></td><td>Number</td><td></td><td>請求金額</td></tr>
+        <tr><td><code>dueDate</code></td><td>String</td><td></td><td>支払期限（ISO 8601）</td></tr>
+        <tr><td><code>description</code></td><td>String</td><td></td><td>摘要・備考</td></tr>
+        <tr><td><code>approverId</code></td><td>String</td><td></td><td>承認者のメールアドレス</td></tr>
+        <tr><td><code>approvalComment</code></td><td>String</td><td></td><td>承認・差し戻しコメント</td></tr>
+        <tr><td><code>createdAt</code></td><td>String</td><td></td><td>作成日時（ISO 8601 UTC）</td></tr>
+        <tr><td><code>updatedAt</code></td><td>String</td><td></td><td>更新日時（ISO 8601 UTC）</td></tr>
+      </table>
+
+      <h3>2.2 ApprovalLogs テーブル（承認ログ）</h3>
+      <table>
+        <tr><th>フィールド名</th><th>型</th><th>制約</th><th>説明</th></tr>
+        <tr><td><code>invoice_id</code></td><td>String</td><td>PK（パーティションキー）</td><td>Invoicesテーブルと対応</td></tr>
+        <tr><td><code>timestamp</code></td><td>String</td><td>SK（ソートキー）</td><td>操作日時（ISO 8601 UTC）</td></tr>
+        <tr><td><code>action</code></td><td>String</td><td></td><td>approve / reject / reconfirm</td></tr>
+        <tr><td><code>approverId</code></td><td>String</td><td></td><td>操作者メールアドレス</td></tr>
+        <tr><td><code>comment</code></td><td>String</td><td></td><td>コメント</td></tr>
+      </table>
+
+      <h3>2.3 Users テーブル（ユーザー）</h3>
+      <div class="note">現在は直接参照なし。将来のユーザー管理機能拡張用。Cognitoとの連携設計は未確定。</div>
+      <table>
+        <tr><th>フィールド名</th><th>型</th><th>制約</th><th>説明</th></tr>
+        <tr><td><code>email</code></td><td>String</td><td>PK</td><td>Cognitoのユーザー識別子と対応</td></tr>
+        <tr><td><code>name</code></td><td>String</td><td></td><td>表示名</td></tr>
+        <tr><td><code>role</code></td><td>String</td><td></td><td>admin / approver / user（将来的に実装）</td></tr>
+      </table>
+
+      <h3>2.4 ER図（概念）</h3>
+      <pre>
+Invoices
+  ├─ invoice_id (PK)
+  ├─ status
+  ├─ ocrEngine
+  ├─ uploadedBy ──→ Users.email
+  └─ approverId ──→ Users.email
+        |
+        | 1 : N
+        ↓
+ApprovalLogs
+  ├─ invoice_id (PK) ──→ Invoices.invoice_id
+  ├─ timestamp   (SK)
+  ├─ action
+  └─ approverId ──→ Users.email
+      </pre>
+    </div>
+  </div>
+
+  <!-- D3 -->
+  <div class="section" id="des3">
+    <div class="section-header" onclick="toggle(this)">
+      <div class="num">D3</div>
+      <h2>画面設計</h2>
+      <span class="toggle">▼</span>
+    </div>
+    <div class="section-body">
+
+      <h3>3.1 画面一覧</h3>
+      <table>
+        <tr><th>画面名</th><th>ファイル</th><th>権限</th><th>説明</th></tr>
+        <tr><td>ログイン</td><td><code>login.html</code></td><td>未認証</td><td>Cognito認証。成功後にダッシュボードへ遷移</td></tr>
+        <tr><td>ダッシュボード</td><td><code>dashboard.html</code></td><td>ログイン済み</td><td>統計サマリー・差し戻し処理待ちタスク・最近の請求書</td></tr>
+        <tr><td>PDFアップロード</td><td><code>upload.html</code></td><td>ログイン済み</td><td>PDF選択・OCRエンジン選択・S3アップロード</td></tr>
+        <tr><td>OCR結果確認</td><td><code>ocr-confirm.html</code></td><td>ログイン済み</td><td>OCR結果表示・手修正・承認申請</td></tr>
+        <tr><td>承認フロー</td><td><code>approval.html</code></td><td>ログイン済み</td><td>承認待ち・承認済み・差し戻し・全て の4タブ</td></tr>
+        <tr><td>ステータス一覧</td><td><code>list.html</code></td><td>ログイン済み</td><td>全請求書一覧・フィルター・CSV出力・PDFリンク</td></tr>
+        <tr><td>管理者設定</td><td><code>settings.html</code></td><td>ログイン済み</td><td>会社設定・OCR設定・承認ルール・通知・ユーザー管理</td></tr>
+        <tr><td>操作マニュアル</td><td>GitHub Pages</td><td>認証不要</td><td>https://fkdkazu-commits.github.io/invoice-mock/user-manual.html</td></tr>
+      </table>
+
+      <h3>3.2 画面遷移図</h3>
+      <pre>
+ログイン画面 (login.html)
+  │
+  └─ ログイン成功 ──→ ダッシュボード (dashboard.html)
+                          │
+         ┌────────────────┼──────────────────────┐
+         ↓                ↓                      ↓
+  PDFアップロード    承認フロー               ステータス一覧
+  (upload.html)    (approval.html)           (list.html)
+         │                │
+         ↓                └─ 再確認申請 (reconfirm)
+  OCR結果確認                      ↓
+  (ocr-confirm.html) ←─────────────┘
+         │
+         └─ 承認申請 ──→ 承認フロー (approval.html)
+
+  ※ サイドバーナビから全ページ相互遷移可能
+  ※ 管理者設定 (settings.html) はサイドバーフッター上
+      </pre>
+
+      <h3>3.3 ワイヤーフレーム概要</h3>
+
+      <h4>共通レイアウト（ダッシュボード〜設定 全7画面）</h4>
+      <pre>
+┌──────────────────────────────────────────────────┐
+│  サイドバー（左固定）  │  メインコンテンツ         │
+│  ─────────────────     │  ─────────────────────    │
+│  🏠 ダッシュボード     │  [ページタイトル]         │
+│  📤 アップロード       │                           │
+│  🔍 OCR確認           │  [コンテンツエリア]        │
+│  ✅ 承認フロー         │                           │
+│  📋 ステータス一覧     │                           │
+│  📖 操作マニュアル     │                           │
+│                        │                           │
+│  ────────────────      │                           │
+│  ⚙️ 管理者設定        │                           │
+└──────────────────────────────────────────────────┘
+      </pre>
+
+      <h4>OCR結果確認画面</h4>
+      <pre>
+┌─────────────────────────────────────────────────┐
+│  OCR処理中: [プログレスバー / スピナー]          │
+├────────────────────┬────────────────────────────┤
+│  PDFプレビュー      │  OCR読み取り結果フォーム    │
+│  （S3 PDF埋め込み） │  ─────────────────────────  │
+│                     │  ベンダー名: [___________] │
+│                     │  請求書番号: [___________] │
+│                     │  金額:       [___________] │
+│                     │  支払期限:   [___________] │
+│                     │  摘要:       [___________] │
+│                     │                            │
+│                     │  [再処理] [確認・承認申請] │
+└────────────────────┴────────────────────────────┘
+      </pre>
+    </div>
+  </div>
+
+  <!-- D4 -->
+  <div class="section" id="des4">
+    <div class="section-header" onclick="toggle(this)">
+      <div class="num">D4</div>
+      <h2>API設計</h2>
+      <span class="toggle">▼</span>
+    </div>
+    <div class="section-body">
+      <div class="info">Base URL: <code>（環境設定ファイル参照）</code><br>
+      全エンドポイント: Authorization ヘッダーに Cognito idToken が必要（API Gateway Cognito Authorizer）</div>
+
+      <h3>4.1 請求書一覧取得</h3>
+      <table>
+        <tr><th>メソッド</th><th>エンドポイント</th><th>Lambda</th><th>説明</th></tr>
+        <tr><td><code>GET</code></td><td><code>/invoices</code></td><td>list_handler</td><td>全請求書をDynamoDBスキャン。各請求書にS3 Presigned URLを付与して返す</td></tr>
+      </table>
+      <h4>レスポンス例</h4>
+      <pre>
+{
+  "invoices": [
+    {
+      "invoice_id": "abc123",
+      "status": "pending_approval",
+      "vendor": "株式会社サンプル",
+      "amount": 110000,
+      "dueDate": "2026-06-30",
+      "pdfUrl": "https://s3.amazonaws.com/...(presigned)"
+    }
+  ]
+}
+      </pre>
+
+      <h3>4.2 Presigned URL取得（アップロード）</h3>
+      <table>
+        <tr><th>メソッド</th><th>エンドポイント</th><th>Lambda</th><th>説明</th></tr>
+        <tr><td><code>POST</code></td><td><code>/invoices/presign</code></td><td>presign_handler</td><td>S3 Presigned URL生成 + DynamoDB に invoice_id・ocrEngine を登録</td></tr>
+      </table>
+      <h4>リクエスト</h4>
+      <pre>{ "fileName": "invoice_2026.pdf", "ocrEngine": "claude" }</pre>
+      <h4>レスポンス</h4>
+      <pre>{ "invoiceId": "abc123", "uploadUrl": "https://s3.amazonaws.com/...(presigned)" }</pre>
+
+      <h3>4.3 OCR確認・承認申請</h3>
+      <table>
+        <tr><th>メソッド</th><th>エンドポイント</th><th>Lambda</th><th>説明</th></tr>
+        <tr><td><code>POST</code></td><td><code>/invoices/confirm</code></td><td>ocr_confirm_handler</td><td>OCR結果（修正後）を保存し、ステータスを pending_approval に更新</td></tr>
+      </table>
+      <h4>リクエスト</h4>
+      <pre>
+{
+  "invoiceId": "abc123",
+  "vendor": "株式会社サンプル",
+  "invoiceNumber": "INV-001",
+  "amount": 110000,
+  "dueDate": "2026-06-30",
+  "description": "Web制作費"
+}
+      </pre>
+
+      <h3>4.4 承認フロー操作</h3>
+      <table>
+        <tr><th>メソッド</th><th>エンドポイント</th><th>Lambda</th><th>説明</th></tr>
+        <tr><td><code>POST</code></td><td><code>/approval</code></td><td>approval_handler</td><td>approve / reject / reconfirm の3アクション。ログ記録・SES通知</td></tr>
+      </table>
+      <h4>リクエスト（approve）</h4>
+      <pre>{ "invoiceId": "abc123", "action": "approve", "approverId": "approver@example.com", "comment": "確認しました" }</pre>
+      <h4>リクエスト（reconfirm）</h4>
+      <pre>{ "invoiceId": "abc123", "action": "reconfirm" }</pre>
+
+      <h3>4.5 S3トリガー（API Gatewayなし）</h3>
+      <table>
+        <tr><th>トリガー</th><th>Lambda</th><th>説明</th></tr>
+        <tr><td>S3 PUT イベント</td><td>ocr_trigger</td><td>PDF アップロード時に自動起動。ocrEngine フィールドを読んでTextract or Claude Visionで処理。結果をDynamoDBに書き込み</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- D5 -->
+  <div class="section" id="des5">
+    <div class="section-header" onclick="toggle(this)">
+      <div class="num">D5</div>
+      <h2>ディレクトリ構成</h2>
+      <span class="toggle">▼</span>
+    </div>
+    <div class="section-body">
+      <pre>
+invoice-system/
+├── .gitignore
+├── README.md
+│
+├── frontend/                     # フロントエンド（Amplify ホスティング）
+│   ├── style.css                 # 共通スタイル
+│   ├── login.html                # 認証画面
+│   ├── dashboard.html            # ダッシュボード
+│   ├── upload.html               # PDFアップロード
+│   ├── ocr-confirm.html          # OCR結果確認
+│   ├── approval.html             # 承認フロー
+│   ├── list.html                 # ステータス一覧
+│   └── settings.html             # 管理者設定
+│
+├── backend/
+│   └── functions/
+│       ├── ocr_trigger/          # S3トリガー・OCR分岐
+│       │   └── app.py
+│       ├── presign_handler/      # Presigned URL生成
+│       │   └── app.py
+│       ├── ocr_confirm_handler/  # OCR確認処理
+│       │   └── app.py
+│       ├── approval_handler/     # 承認フロー
+│       │   └── app.py
+│       ├── list_handler/         # 請求書一覧
+│       │   └── app.py
+│       └── notify_sender/        # SESメール通知
+│           └── app.py
+│
+├── docs/                         # ドキュメント（ローカル管理）
+│   ├── aws-setup.html            # AWS設定手順書（環境固有の設定値はここに記載）
+│   ├── user-manual.html          # ユーザー操作マニュアル
+│   ├── admin-manual.html         # 管理者マニュアル
+│   └── requirements.html         # 本ファイル（要件定義・設計書）
+│
+└── （Lambda Layer はCloudShellでビルド・デプロイ）
+    invoice-ocr-layer: anthropic + PyMuPDF
+    ビルドコマンド:
+      pip install anthropic pymupdf \
+        --platform manylinux2014_x86_64 \
+        --only-binary=:all: \
+        --target ./python
+      </pre>
+    </div>
+  </div>
+
+  <!-- D6 -->
+  <div class="section" id="des6">
+    <div class="section-header" onclick="toggle(this)">
+      <div class="num">D6</div>
+      <h2>開発フェーズ</h2>
+      <span class="badge">全フェーズ完了</span>
+      <span class="toggle">▼</span>
+    </div>
+    <div class="section-body">
+      <div class="phase-box">
+        <h4>Phase 1: インフラ構築</h4>
+        <ul class="check-list">
+          <li class="done">S3バケット作成（invoice-system-files-{アカウント名}）</li>
+          <li class="done">DynamoDB テーブル作成（Invoices / ApprovalLogs / Users）</li>
+          <li class="done">Lambda 関数6つ作成・IAMロール設定</li>
+          <li class="done">API Gateway 設定（4エンドポイント・CORS）</li>
+          <li class="done">Cognito User Pool 作成</li>
+          <li class="done">SES ドメイン検証（サンドボックス状態）</li>
+          <li class="done">Amplify デプロイ設定</li>
+          <li class="done">SSM Parameter Store に Anthropic APIキー登録</li>
+        </ul>
+      </div>
+      <div class="phase-box">
+        <h4>Phase 2: フロントエンド HTML 作成</h4>
+        <ul class="check-list">
+          <li class="done">全7画面 HTML 作成（login / dashboard / upload / ocr-confirm / approval / list / settings）</li>
+          <li class="done">共通スタイル style.css 作成</li>
+          <li class="done">サイドバーナビ共通化</li>
+        </ul>
+      </div>
+      <div class="phase-box">
+        <h4>Phase 3: API 接続（2026-05-04 完了）</h4>
+        <ul class="check-list">
+          <li class="done">Cognito 認証 → JWT 保存 → API Gateway 接続</li>
+          <li class="done">upload.html → presign_handler → S3 アップロード</li>
+          <li class="done">ocr-confirm.html → ポーリング → ocr_confirm_handler</li>
+          <li class="done">approval.html → approval_handler（approve / reject / reconfirm）</li>
+          <li class="done">list.html → list_handler（月別フィルター・CSV・PDFリンク）</li>
+          <li class="done">dashboard.html → list_handler（統計・タスク表示）</li>
+        </ul>
+      </div>
+      <div class="phase-box">
+        <h4>Phase 4: OCR 実装（2026-05-04〜05 完了）</h4>
+        <ul class="check-list">
+          <li class="done">ocr_trigger Lambda: Textract 実装（ap-northeast-2）</li>
+          <li class="done">ocr_trigger Lambda: Claude Vision 実装（PyMuPDF + base64 + Claude API）</li>
+          <li class="done">Lambda Layer 作成（manylinux2014_x86_64 ビルド）</li>
+          <li class="done">Lambda メモリ 512MB に増量</li>
+          <li class="done">OCRエンジン切り替え UI（アップロード画面ラジオボタン）</li>
+        </ul>
+      </div>
+      <div class="phase-box">
+        <h4>Phase 5: UI 修正・仕上げ（2026-05-05 完了）</h4>
+        <ul class="check-list">
+          <li class="done">差し戻しフロー修正（reconfirm）・タブ切り替えバグ修正</li>
+          <li class="done">ナビ整理（操作マニュアル・管理者設定の位置変更）</li>
+          <li class="done">操作マニュアル GitHub Pages 公開（Amplify認証回避）</li>
+          <li class="done">OCR確認ポーリング高速化（5秒→初回1秒/以降2秒）</li>
+          <li class="done">ログイン時 Lambda ウォームアップ（コールドスタート対策）</li>
+          <li class="done">管理者設定に開発用ツール（全履歴クリア）追加</li>
+          <li class="done">テストデータ 32件削除</li>
+        </ul>
+      </div>
+      <div class="phase-box" style="border-color:#e67e22">
+        <h4>Phase 6: 本番運用準備（未完了）</h4>
+        <ul class="check-list">
+          <li class="warn-item">SES サンドボックス解除申請</li>
+          <li class="todo-item">開発用ツール削除（settings.html / list_handler / approval_handler）</li>
+          <li class="todo-item">管理者設定 未接続 API の実装</li>
+          <li class="todo-item">Cognito Groupsによるロール分け実装</li>
+          <li class="todo-item">DynamoDB Point-in-Time Recovery 有効化</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- D7 -->
+  <div class="section" id="des7">
+    <div class="section-header" onclick="toggle(this)">
+      <div class="num">D7</div>
+      <h2>セキュリティ考慮事項</h2>
+      <span class="toggle">▼</span>
+    </div>
+    <div class="section-body">
+      <h3>実装済み</h3>
+      <ul class="check-list">
+        <li class="done">認証: Amazon Cognito JWT（idToken）。API Gateway Authorizer で全エンドポイント保護</li>
+        <li class="done">シークレット管理: Anthropic APIキーを SSM Parameter Store（SecureString）で管理。コードにハードコードなし</li>
+        <li class="done">ファイルアクセス: S3は Presigned URL のみ（バケットは非公開）</li>
+        <li class="done">CORS: API Gateway で Amplify URL のみ許可（<code>https://main.d1s3l4cj3k7ufm.amplifyapp.com</code>）</li>
+        <li class="done">通信: HTTPS 必須（Amplify・API Gateway ともに）</li>
+        <li class="done">IAM 最小権限: 各 Lambda に必要なポリシーのみ付与</li>
+        <li class="done">入力検証: Lambda 側で必須パラメータチェック・ステータス整合性チェック</li>
+      </ul>
+
+      <div class="note">本番運用前のセキュリティ対応項目は別途内部チケットで管理しています。</div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<footer>invoice-system 要件定義・設計書 ／ 作成: 2026-05-05 ／ 更新時は本ファイルを直接編集すること</footer>
+
+<script>
+  function toggle(header) {
+    const body = header.nextElementSibling;
+    const arrow = header.querySelector('.toggle');
+    if (body.classList.contains('collapsed')) {
+      body.classList.remove('collapsed');
+      arrow.style.transform = 'rotate(0deg)';
+    } else {
+      body.classList.add('collapsed');
+      arrow.style.transform = 'rotate(-90deg)';
+    }
+  }
+
+  // スムーズスクロール
+  document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      const el = document.querySelector(a.getAttribute('href'));
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+</body>
+</html>
