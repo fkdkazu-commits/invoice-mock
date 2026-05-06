@@ -514,6 +514,7 @@
               <div class="task-item"><div class="task-check"></div><div class="task-text">AWS開発用IAMユーザー作成（AdministratorAccess）</div></div>
               <div class="task-item"><div class="task-check"></div><div class="task-text">Cognito ユーザープール作成<div class="task-note">ログイン方法：メール+パスワード / MFA設定</div></div></div>
               <div class="task-item"><div class="task-check"></div><div class="task-text">Cognitoにテスト用ユーザーを登録</div></div>
+              <div class="task-item"><div class="task-check"></div><div class="task-text">Cognitoグループ作成：<code>admin</code> / <code>approver</code> / <code>user</code><div class="task-note">ロール分けによる権限制御。承認・管理者設定の操作可否をグループで管理。バックエンド（approval_handler）でも403チェックを実装。</div></div></div>
             </div>
             <div class="task-group-label">ストレージ</div>
             <div class="task-list">
@@ -531,8 +532,8 @@
           <div>
             <div class="task-group-label">処理・AI</div>
             <div class="task-list">
-              <div class="task-item"><div class="task-check"></div><div class="task-text">Lambda 関数作成：<code>ocr-trigger</code><div class="task-note">S3アップロード検知 → OCRエンジン分岐（Textract / Claude Vision）</div></div></div>
-              <div class="task-item"><div class="task-check"></div><div class="task-text">Lambda 関数作成：<code>approval-handler</code><div class="task-note">承認・差し戻し → DynamoDB更新</div></div></div>
+              <div class="task-item"><div class="task-check"></div><div class="task-text">Lambda 関数作成：<code>ocr-trigger</code><div class="task-note">S3アップロード検知 → OCRエンジン分岐（Textract / Claude Vision）。PDF・JPEG・PNG・TIFF に対応。Claude Visionは請求書ごとに切り替え可能。</div></div></div>
+              <div class="task-item"><div class="task-check"></div><div class="task-text">Lambda 関数作成：<code>approval-handler</code><div class="task-note">承認・差し戻し → DynamoDB更新。JWTのグループクレームを検証し、<code>approver</code>/<code>admin</code> 以外は403を返す。</div></div></div>
               <div class="task-item"><div class="task-check"></div><div class="task-text">Lambda 関数作成：<code>notify-sender</code><div class="task-note">Slack/Teams/メール通知</div></div></div>
               <div class="task-item"><div class="task-check"></div><div class="task-text">OCRエンジンの選択と設定<div class="task-note">Textract（標準）or Claude Vision（高精度）。Claude Vision使用時はLambda Layerの作成とSSM Parameter StoreへのAPIキー登録が必要。</div></div></div>
               <div class="task-item"><div class="task-check"></div><div class="task-text">Amazon Textract 動作確認（サンプルPDFで項目抽出テスト）</div></div>
