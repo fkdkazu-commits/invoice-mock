@@ -75,7 +75,7 @@
 
 <header>
   <h1>要件定義書 ／ 設計書 — invoice-system</h1>
-  <p>作成日: 2026-05-05 ／ 作成者: fkdkazu ／ ローカル管理専用（Amplify非公開）</p>
+  <p>作成日: 2026-05-05 ／ 最終更新: 2026-05-07 ／ 作成者: fkdkazu ／ ローカル管理専用（Amplify非公開）</p>
 </header>
 
 <div class="container">
@@ -181,7 +181,7 @@
       <span class="toggle">▼</span>
     </div>
     <div class="section-body">
-      <div class="info">現時点ではCognitoユーザープールで全員同一権限。管理者ロール分けは未実装（未対応項目）。</div>
+      <div class="success">Cognito Groupsによるロール分けを実装済み（2026-05-06）。ログインユーザーのグループに応じて操作可能な機能が制限されます。</div>
       <table>
         <tr>
           <th>ロール</th>
@@ -208,7 +208,7 @@
           <td>他者のデータ編集・承認操作・管理者設定</td>
         </tr>
       </table>
-      <div class="note">ロール分けはCognito Groupsで実装予定。現在はログイン済みユーザーが全操作可能。</div>
+      <div class="note">ロールはCognito Groupsで管理。ログイン時にJWT内の <code>cognito:groups</code> をデコードし <code>sessionStorage.groups</code> に保存。グループ変更後は再ログインが必要。</div>
     </div>
   </div>
 
@@ -225,14 +225,15 @@
       <ul>
         <li>Cognito User Pool によるメールアドレス＋パスワード認証</li>
         <li>JWT idToken を <code>sessionStorage.token</code> に保存し、以後のAPI呼び出しで使用</li>
+        <li>JWT payload をデコードし <code>cognito:groups</code> を <code>sessionStorage.groups</code>（JSON配列）に保存</li>
         <li>ログイン成功後、Lambda コールドスタート解消のためウォームアップfetchを実行（800ms後にダッシュボードへ遷移）</li>
         <li>未ログイン状態でのページアクセスはトップへリダイレクト</li>
         <li>ログアウト機能あり（sessionStorage クリア）</li>
       </ul>
 
-      <h3 class="req-h">3.2 PDFアップロード（upload.html）</h3>
+      <h3 class="req-h">3.2 ファイルアップロード（upload.html）</h3>
       <ul>
-        <li>PDFファイルのドラッグ＆ドロップまたはファイル選択</li>
+        <li>PDF・JPEG・PNG・TIFF ファイルのドラッグ＆ドロップまたはファイル選択</li>
         <li>OCRエンジン選択（ラジオボタン: Textract / Claude Vision）</li>
         <li>Presigned URL経由でS3に直接アップロード</li>
         <li>アップロード後、S3トリガーで <code>ocr_trigger</code> Lambda が自動起動</li>
@@ -241,17 +242,19 @@
 
       <h3 class="req-h">3.3 OCR結果確認（ocr-confirm.html）</h3>
       <ul>
-        <li>OCR処理中のステータスをポーリングで取得（初回1秒、以降2秒間隔）</li>
+        <li>OCR処理中のステータスをポーリングで取得（初回1秒、以降2秒間隔・90秒タイムアウト）</li>
+        <li><code>ocrCompletedAt</code> フィールドで確実にOCR完了を検知</li>
         <li>OCR完了後、読み取り結果（ベンダー名・請求書番号・金額・支払期限・摘要）を表示</li>
+        <li>ファイルプレビュー: PDF は <code>&lt;iframe&gt;</code>、JPEG/PNG/TIFF は <code>&lt;img&gt;</code> で表示</li>
         <li>各フィールドを手動修正可能</li>
         <li>「確認・承認申請」ボタンで <code>ocr_confirm</code> APIを呼び出し、ステータスを <code>pending_approval</code> に更新</li>
-        <li>「再処理」ボタン（スタブ・未実装）</li>
+        <li>「再処理」ボタン（OCRエンジン再選択 → S3 CopyObject で再トリガー）</li>
       </ul>
 
       <h3 class="req-h">3.4 承認フロー（approval.html）</h3>
       <ul>
         <li>4タブ構成: 承認待ち / 承認済み / 差し戻し / 全て</li>
-        <li>承認待ちタブ: 各請求書に「承認」「差し戻し」ボタン。コメント入力欄あり</li>
+        <li>承認待ちタブ: 各請求書に「承認」「差し戻し」ボタン。コメント入力欄あり（<strong>approver / admin ロールのみ表示</strong>）</li>
         <li>差し戻しタブ: 「OCR確認画面へ戻す（再確認申請）」ボタン（reconfirmアクション）</li>
         <li>承認・差し戻し時にSESメール通知をトリガー（notify_sender Lambda を非同期呼び出し）</li>
       </ul>
@@ -280,6 +283,7 @@
         <li>通知設定タブ: メール/Slack/Teamsトグル・Webhook URL（API未接続）</li>
         <li>ユーザー管理タブ: ユーザー一覧（ダミーデータ）・招待機能（スタブ）</li>
         <li>開発用ツール: 全履歴クリアボタン（<span class="tag red">本番前削除</span>）</li>
+        <li><strong>admin ロール以外のアクセスはダッシュボードにリダイレクト</strong></li>
       </ul>
     </div>
   </div>
@@ -316,7 +320,7 @@
         <li>アップロード時にユーザーが選択したエンジン名（<code>"textract"</code> or <code>"claude"</code>）をDynamoDB <code>Invoices.ocrEngine</code> フィールドに保存</li>
         <li><code>ocr_trigger</code> Lambda がこのフィールドを読み取り、処理を分岐</li>
         <li>Textract: Seoul（ap-northeast-2）リージョン使用（ap-northeast-1 未対応）</li>
-        <li>Claude Vision: PDFをPyMuPDFでPNG変換 → base64 → Claude API（<code>claude-opus-4-7</code>）</li>
+        <li>Claude Vision: PDFをPyMuPDFでPNG変換 → base64 → Claude API（<code>claude-sonnet-4-6</code>）</li>
       </ul>
 
       <h3 class="req-h">承認ルール</h3>
@@ -437,9 +441,14 @@
       <h3 class="req-h">他ページ未対応</h3>
       <table>
         <tr><th>ページ</th><th>項目</th><th>現状</th></tr>
-        <tr><td>ocr-confirm.html</td><td>「再処理」ボタン</td><td>スタブ・API未接続</td></tr>
         <tr><td>list.html</td><td>「詳細」表示</td><td>スタブ</td></tr>
-        <tr><td>全ページ</td><td>権限ロール分け（Cognito Groups連携）</td><td>未実装</td></tr>
+      </table>
+      <h3 class="req-h">実装完了（旧・未対応）</h3>
+      <table>
+        <tr><th>項目</th><th>対応日</th></tr>
+        <tr><td>ocr-confirm.html「再処理」ボタン（OCRエンジン再選択 + S3 CopyObjectで再トリガー）</td><td>2026-05-06</td></tr>
+        <tr><td>全ページ 権限ロール分け（Cognito Groups: admin / approver / user）</td><td>2026-05-06</td></tr>
+        <tr><td>JPEG / PNG / TIFF プレビュー対応（<code>&lt;img&gt;</code> タグで表示）</td><td>2026-05-07</td></tr>
       </table>
     </div>
   </div>
@@ -503,7 +512,7 @@
         </tr>
         <tr>
           <td><strong>OCR（B）</strong></td>
-          <td>Anthropic Claude Vision（claude-opus-4-7）</td>
+          <td>Anthropic Claude Vision（claude-sonnet-4-6）</td>
           <td>複雑レイアウト・手書き混在への柔軟対応。SSMでAPIキー管理</td>
         </tr>
         <tr>
@@ -615,7 +624,7 @@ ApprovalLogs
         <tr><td>OCR結果確認</td><td><code>ocr-confirm.html</code></td><td>ログイン済み</td><td>OCR結果表示・手修正・承認申請</td></tr>
         <tr><td>承認フロー</td><td><code>approval.html</code></td><td>ログイン済み</td><td>承認待ち・承認済み・差し戻し・全て の4タブ</td></tr>
         <tr><td>ステータス一覧</td><td><code>list.html</code></td><td>ログイン済み</td><td>全請求書一覧・フィルター・CSV出力・PDFリンク</td></tr>
-        <tr><td>管理者設定</td><td><code>settings.html</code></td><td>ログイン済み</td><td>会社設定・OCR設定・承認ルール・通知・ユーザー管理</td></tr>
+        <tr><td>管理者設定</td><td><code>settings.html</code></td><td><strong>admin のみ</strong></td><td>会社設定・OCR設定・承認ルール・通知・ユーザー管理</td></tr>
         <tr><td>操作マニュアル</td><td>GitHub Pages</td><td>認証不要</td><td>https://fkdkazu-commits.github.io/invoice-mock/user-manual.html</td></tr>
       </table>
 
@@ -873,13 +882,23 @@ invoice-system/
           <li class="done">テストデータ 32件削除</li>
         </ul>
       </div>
+      <div class="phase-box">
+        <h4>Phase 6: 機能拡張・品質改善（2026-05-06〜07 完了）</h4>
+        <ul class="check-list">
+          <li class="done">OCR再処理ボタン実装（S3 CopyObject + ocrCompletedAt REMOVE）</li>
+          <li class="done">OCRポーリング改善（ocrCompletedAt フィールドで確実に完了検知・90秒タイムアウト）</li>
+          <li class="done">PDF インライン表示修正（Presigned URL に ResponseContentDisposition: inline）</li>
+          <li class="done">JPEG / PNG / TIFF プレビュー対応（content-type 自動判定・img/iframe 切り替え）</li>
+          <li class="done">Cognito Groupsによるロール分け実装（admin / approver / user）</li>
+          <li class="done">Claude Vision モデル変更（claude-opus-4-7 → claude-sonnet-4-6）</li>
+        </ul>
+      </div>
       <div class="phase-box" style="border-color:#e67e22">
-        <h4>Phase 6: 本番運用準備（未完了）</h4>
+        <h4>Phase 7: 本番運用準備（未完了）</h4>
         <ul class="check-list">
           <li class="warn-item">SES サンドボックス解除申請</li>
           <li class="todo-item">開発用ツール削除（settings.html / list_handler / approval_handler）</li>
           <li class="todo-item">管理者設定 未接続 API の実装</li>
-          <li class="todo-item">Cognito Groupsによるロール分け実装</li>
           <li class="todo-item">DynamoDB Point-in-Time Recovery 有効化</li>
         </ul>
       </div>
@@ -903,6 +922,7 @@ invoice-system/
         <li class="done">通信: HTTPS 必須（Amplify・API Gateway ともに）</li>
         <li class="done">IAM 最小権限: 各 Lambda に必要なポリシーのみ付与</li>
         <li class="done">入力検証: Lambda 側で必須パラメータチェック・ステータス整合性チェック</li>
+        <li class="done">ロールベースアクセス制御: Cognito Groups で admin / approver / user を管理。フロントエンドで UI 制御、approval_handler で approve/reject 時に 403 チェック（JWT グループクレーム検証）</li>
       </ul>
 
       <div class="note">本番運用前のセキュリティ対応項目は別途内部チケットで管理しています。</div>
@@ -911,7 +931,7 @@ invoice-system/
 
 </div><!-- /container -->
 
-<footer>invoice-system 要件定義・設計書 ／ 作成: 2026-05-05 ／ 更新時は本ファイルを直接編集すること</footer>
+<footer>invoice-system 要件定義・設計書 ／ 作成: 2026-05-05 ／ 最終更新: 2026-05-07 ／ 更新時は本ファイルを直接編集すること</footer>
 
 <script>
   function toggle(header) {
